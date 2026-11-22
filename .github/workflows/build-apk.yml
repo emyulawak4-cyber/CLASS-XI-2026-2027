@@ -43,8 +43,13 @@ jobs:
             cp .env.example .env
           fi
           if [ ! -f app/google-services.json ] && [ -n "$GOOGLE_SERVICES_JSON" ]; then
-            echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+            printf '%s\n' "$GOOGLE_SERVICES_JSON" > app/google-services.json
           fi
+          if [ ! -f app/google-services.json ]; then
+            echo "::error::GOOGLE_SERVICES_JSON belum diatur! Tambahkan Secret bernama GOOGLE_SERVICES_JSON di GitHub Repository Settings -> Secrets and variables -> Actions dengan isi file app/google-services.json agar APK tidak force-close."
+            exit 1
+          fi
+          python3 -m json.tool app/google-services.json > /dev/null
 
       - name: Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4

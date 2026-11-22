@@ -124,6 +124,7 @@ import com.example.viewmodel.ClassPortalData
 import com.example.viewmodel.ClassViewModel
 import com.example.viewmodel.ToastEvent
 import com.google.firebase.Firebase
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
@@ -175,6 +176,56 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val context = LocalContext.current
+            val isFirebaseReady = remember {
+                try {
+                    FirebaseApp.getApps(context).isNotEmpty() || FirebaseApp.initializeApp(context) != null
+                } catch (_: Exception) {
+                    false
+                }
+            }
+
+            if (!isFirebaseReady) {
+                ClassXiTheme {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Brush.linearGradient(listOf(RoyalBlueBright, RoyalBlue, RoyalBlueDark)))
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.School,
+                                    contentDescription = null,
+                                    tint = RoyalBlue,
+                                    modifier = Modifier.size(44.dp)
+                                )
+                                Text(
+                                    text = "Konfigurasi Firebase Belum Terpasang",
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    text = "APK ini dibuat tanpa file google-services.json. Tambahkan secret GOOGLE_SERVICES_JSON di GitHub Repository Settings → Secrets and variables → Actions lalu build ulang APK.",
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+                return@setContent
+            }
+
             val scope = rememberCoroutineScope()
             val credentialManager = remember { CredentialManager.create(context) }
             var currentUser by remember { mutableStateOf<FirebaseUser?>(Firebase.auth.currentUser) }

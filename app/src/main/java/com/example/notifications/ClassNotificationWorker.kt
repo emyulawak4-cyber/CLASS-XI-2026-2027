@@ -15,6 +15,7 @@ import com.example.data.handleFirestoreError
 import com.example.model.CLASS_ID
 import com.example.model.ClassNotification
 import com.google.firebase.Firebase
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -28,6 +29,7 @@ class ClassNotificationWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
+        if (FirebaseApp.getApps(applicationContext).isEmpty()) return Result.success()
         val currentUid = Firebase.auth.currentUser?.uid ?: return Result.success()
         val prefs = PreferencesRepository(applicationContext)
         if (!prefs.isNotificationsEnabled()) return Result.success()
@@ -87,22 +89,26 @@ class ClassNotificationWorker(
         private const val UNIQUE_WORK_NAME = "class_xi_friend_notifications_sync"
 
         fun schedulePeriodicSync(context: Context) {
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
+            try {
+                val constraints = Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
 
-            val request = PeriodicWorkRequestBuilder<ClassNotificationWorker>(
-                15,
-                TimeUnit.MINUTES
-            )
-                .setConstraints(constraints)
-                .build()
+                val request = PeriodicWorkRequestBuilder<ClassNotificationWorker>(
+                    15,
+                    TimeUnit.MINUTES
+                )
+                    .setConstraints(constraints)
+                    .build()
 
-            WorkManager.getInstance(context.applicationContext).enqueueUniquePeriodicWork(
-                UNIQUE_WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
-                request
-            )
+                WorkManager.getInstance(context.applicationContext).enqueueUniquePeriodicWork(
+                    UNIQUE_WORK_NAME,
+                    ExistingPeriodicWorkPolicy.KEEP,
+                    request
+                )
+            } catch (_: Exception) {
+                // Ignore if WorkManager initialization is deferred on OEM devices
+            }
         }
 
         fun cancelSync(context: Context) {
