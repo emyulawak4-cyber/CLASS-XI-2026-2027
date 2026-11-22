@@ -15,12 +15,13 @@ import com.example.data.ThemeMode
 import com.example.data.ThemeStyle
 
 val LocalLiquidGlass = staticCompositionLocalOf { false }
+val LocalIsDarkTheme = staticCompositionLocalOf { false }
 
 private val ClassXiLightScheme = lightColorScheme(
     primary = RoyalBlue,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFEEF4FF),
-    onPrimaryContainer = RoyalBlueDark,
+    primaryContainer = PrimaryTintLight,
+    onPrimaryContainer = RoyalBlue,
     secondary = SkyBlue,
     onSecondary = Color.White,
     secondaryContainer = Color(0xFFE0F2FE),
@@ -43,10 +44,10 @@ private val ClassXiLightScheme = lightColorScheme(
 )
 
 private val ClassXiDarkScheme = darkColorScheme(
-    primary = Color(0xFF5B9BFF),
+    primary = Color(0xFF6AA6FF),
     onPrimary = Color(0xFF001C4D),
-    primaryContainer = Color(0xFF0A4FC4),
-    onPrimaryContainer = Color.White,
+    primaryContainer = PrimaryTintDark,
+    onPrimaryContainer = Color(0xFF6AA6FF),
     secondary = Color(0xFF7DD3FC),
     onSecondary = Color(0xFF082F49),
     secondaryContainer = Color(0xFF0C4A6E),
@@ -90,14 +91,18 @@ fun ClassXiTheme(
     val colorScheme = if (isGlass) {
         baseScheme.copy(
             background = if (darkTheme) Color(0xFF060B18) else Color(0xFFDCE8FB),
-            surface = if (darkTheme) Color(0xCC182242) else Color(0xD9FFFFFF),
-            surfaceVariant = if (darkTheme) Color(0x66243049) else Color(0x99EEF4FF)
+            surface = if (darkTheme) Color(0x99182242) else Color(0xADFFFFFF),
+            surfaceVariant = if (darkTheme) Color(0x4D243049) else Color(0x66FFFFFF),
+            outline = if (darkTheme) Color(0x28FFFFFF) else Color(0xCCFFFFFF)
         )
     } else {
         baseScheme
     }
 
-    CompositionLocalProvider(LocalLiquidGlass provides isGlass) {
+    CompositionLocalProvider(
+        LocalLiquidGlass provides isGlass,
+        LocalIsDarkTheme provides darkTheme
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = ClassXiTypography,

@@ -10,7 +10,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,36 +26,31 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AccountBalanceWallet
-import androidx.compose.material.icons.rounded.AdminPanelSettings
-import androidx.compose.material.icons.rounded.Campaign
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.DarkMode
-import androidx.compose.material.icons.rounded.FactCheck
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.LockOpen
+import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -73,10 +71,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -91,7 +91,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.auth.AuthManager
-import com.example.data.ThemeMode
 import com.example.model.AttendanceStatus
 import com.example.model.UiState
 import com.example.notifications.ClassNotificationWorker
@@ -114,12 +113,24 @@ import com.example.ui.screens.RekapScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.SplashWelcomeOverlay
 import com.example.ui.screens.StudentQrDialog
+import com.example.ui.theme.AmberSakit
 import com.example.ui.theme.ClassXiTheme
+import com.example.ui.theme.DividerDark
+import com.example.ui.theme.DividerLight
+import com.example.ui.theme.EmeraldDark
 import com.example.ui.theme.EmeraldKas
-import com.example.ui.theme.RoseAlpa
+import com.example.ui.theme.LocalIsDarkTheme
+import com.example.ui.theme.LocalLiquidGlass
+import com.example.ui.theme.NavBarDark
+import com.example.ui.theme.OutlineDark
+import com.example.ui.theme.OutlineLight
 import com.example.ui.theme.RoyalBlue
 import com.example.ui.theme.RoyalBlueBright
 import com.example.ui.theme.RoyalBlueDark
+import com.example.ui.theme.RoyalBlueDeep
+import com.example.ui.theme.RoyalBlueMid
+import com.example.ui.theme.TextMutedDark
+import com.example.ui.theme.TextMutedLight
 import com.example.viewmodel.ClassPortalData
 import com.example.viewmodel.ClassViewModel
 import com.example.viewmodel.ToastEvent
@@ -130,6 +141,9 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Serializable data object BerandaRoute
 @Serializable data object PresensiRoute
@@ -142,13 +156,6 @@ import kotlinx.serialization.Serializable
 @Serializable data object MateriRoute
 @Serializable data object RekapRoute
 @Serializable data object SettingsRoute
-
-private data class PrimaryNavItem(
-    val routeObj: Any,
-    val label: String,
-    val icon: ImageVector,
-    val tag: String
-)
 
 private fun routeObjFromKey(key: String): Any = when (key.lowercase()) {
     "presensi" -> PresensiRoute
@@ -326,7 +333,7 @@ private fun ClassXiPortalRoot(
     ) { granted ->
         scope.launch {
             snackbarHostState.showSnackbar(
-                if (granted) "Notifikasi perangkat aktif! Info dari teman akan muncul." else "Izin notifikasi ditolak; pengumuman tetap bisa dilihat di tab Info."
+                if (granted) "Notifikasi perangkat aktif! Info dari teman akan muncul." else "Izin notifikasi ditolak; pengumuman tetap bisa dilihat di Info Kelas."
             )
         }
     }
@@ -379,17 +386,11 @@ private fun ClassXiPortalRoot(
         themeMode = portalData.preferences.themeMode,
         themeStyle = portalData.preferences.themeStyle
     ) {
-        val primaryItems = listOf(
-            PrimaryNavItem(BerandaRoute, stringResource(R.string.nav_beranda), Icons.Rounded.Home, "nav_beranda"),
-            PrimaryNavItem(PresensiRoute, stringResource(R.string.nav_presensi), Icons.Rounded.FactCheck, "nav_presensi"),
-            PrimaryNavItem(KasRoute, stringResource(R.string.nav_kas), Icons.Rounded.AccountBalanceWallet, "nav_kas"),
-            PrimaryNavItem(InfoRoute, stringResource(R.string.nav_info), Icons.Rounded.Campaign, "nav_info"),
-            PrimaryNavItem(SettingsRoute, stringResource(R.string.nav_pengaturan), Icons.Rounded.Settings, "nav_settings")
-        )
-
         GlassBackdropBox {
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 val isExpandedWidth = maxWidth >= 840.dp
+                val isBeranda = currentDest?.hasRoute(BerandaRoute::class) == true
+                val isSettings = currentDest?.hasRoute(SettingsRoute::class) == true
 
                 Row(modifier = Modifier.fillMaxSize()) {
                     if (isExpandedWidth) {
@@ -398,16 +399,27 @@ private fun ClassXiPortalRoot(
                             containerColor = MaterialTheme.colorScheme.surface
                         ) {
                             Spacer(modifier = Modifier.height(16.dp))
-                            primaryItems.forEach { item ->
-                                val selected = currentDest?.hasRoute(item.routeObj::class) == true
-                                NavigationRailItem(
-                                    selected = selected,
-                                    onClick = { navigateTo(item.routeObj) },
-                                    icon = { Icon(item.icon, contentDescription = item.label) },
-                                    label = { Text(item.label, fontSize = 11.sp, maxLines = 1) },
-                                    modifier = Modifier.testTag(item.tag)
-                                )
-                            }
+                            NavigationRailItem(
+                                selected = isBeranda,
+                                onClick = { navigateTo(BerandaRoute) },
+                                icon = { Icon(Icons.Rounded.Home, contentDescription = "Beranda") },
+                                label = { Text("Beranda", fontSize = 11.sp, maxLines = 1) },
+                                modifier = Modifier.testTag("nav_beranda")
+                            )
+                            NavigationRailItem(
+                                selected = false,
+                                onClick = { showScannerDialog = true },
+                                icon = { Icon(Icons.Rounded.QrCodeScanner, contentDescription = "Scan QR", tint = RoyalBlue) },
+                                label = { Text("Scan QR", fontSize = 11.sp, maxLines = 1, color = RoyalBlue) },
+                                modifier = Modifier.testTag("nav_scan_qr")
+                            )
+                            NavigationRailItem(
+                                selected = isSettings,
+                                onClick = { navigateTo(SettingsRoute) },
+                                icon = { Icon(Icons.Rounded.Settings, contentDescription = "Pengaturan") },
+                                label = { Text("Pengaturan", fontSize = 11.sp, maxLines = 1) },
+                                modifier = Modifier.testTag("nav_settings")
+                            )
                         }
                     }
 
@@ -417,45 +429,36 @@ private fun ClassXiPortalRoot(
                         snackbarHost = { SnackbarHost(snackbarHostState) },
                         contentWindowInsets = WindowInsets(0, 0, 0, 0),
                         topBar = {
-                            ClassXiTopHeader(
-                                data = portalData,
-                                onSearchChange = viewModel::setGlobalSearch,
-                                onToggleAdmin = {
-                                    if (portalData.isAdminMode) viewModel.exitAdminMode() else showAdminPinDialog = true
-                                },
-                                onToggleDarkTheme = {
-                                    val next = when (portalData.preferences.themeMode) {
-                                        ThemeMode.DARK -> ThemeMode.LIGHT
-                                        else -> ThemeMode.DARK
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                ClassXiTopHeader(
+                                    data = portalData,
+                                    onLogoClick = { navigateTo(BerandaRoute) },
+                                    onOpenSettings = {
+                                        if (isSettings) {
+                                            navController.popBackStack()
+                                        } else {
+                                            navigateTo(SettingsRoute)
+                                        }
+                                    },
+                                    onSearchChange = viewModel::setGlobalSearch,
+                                    onToggleAdmin = {
+                                        if (portalData.isAdminMode) viewModel.exitAdminMode() else showAdminPinDialog = true
                                     }
-                                    viewModel.setThemeMode(next)
-                                }
-                            )
+                                )
+                                V9StatusStrip(
+                                    pendingLeaveCount = portalData.pendingLeaveCount,
+                                    isOnlineSynced = portalData.isOnlineSynced,
+                                    onClickPendingLeave = { navigateTo(SuratIzinRoute) }
+                                )
+                            }
                         },
                         bottomBar = {
                             if (!isExpandedWidth) {
-                                NavigationBar(
-                                    windowInsets = WindowInsets.navigationBars,
-                                    containerColor = MaterialTheme.colorScheme.surface
-                                ) {
-                                    primaryItems.forEach { item ->
-                                        val selected = currentDest?.hasRoute(item.routeObj::class) == true
-                                        NavigationBarItem(
-                                            selected = selected,
-                                            onClick = { navigateTo(item.routeObj) },
-                                            icon = { Icon(item.icon, contentDescription = item.label) },
-                                            label = {
-                                                Text(
-                                                    text = item.label,
-                                                    fontSize = 10.5.sp,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            },
-                                            modifier = Modifier.testTag(item.tag)
-                                        )
-                                    }
-                                }
+                                V9BottomBar(
+                                    isBerandaSelected = isBeranda,
+                                    onSelectBeranda = { navigateTo(BerandaRoute) },
+                                    onOpenScanner = { showScannerDialog = true }
+                                )
                             }
                         }
                     ) { innerPadding ->
@@ -471,7 +474,7 @@ private fun ClassXiPortalRoot(
                                             horizontalAlignment = Alignment.CenterHorizontally,
                                             verticalArrangement = Arrangement.spacedBy(10.dp)
                                         ) {
-                                            CircularProgressIndicator(color = RoyalBlue)
+                                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                                             Text("Menyinkronkan data CLASS XI...", fontSize = 13.sp)
                                         }
                                     }
@@ -583,12 +586,6 @@ private fun ClassXiPortalRoot(
                                                 data = data,
                                                 currentUid = currentUser.uid,
                                                 onRequestAdminLogin = { showAdminPinDialog = true },
-                                                onRequestNotificationPermission = {
-                                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                                        notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                                    }
-                                                },
-                                                onSendTestNotification = viewModel::sendTestFriendNotification,
                                                 onAddAnnouncement = viewModel::addAnnouncement,
                                                 onDeleteAnnouncement = viewModel::deleteAnnouncement
                                             )
@@ -618,17 +615,6 @@ private fun ClassXiPortalRoot(
                                                 currentUser = currentUser,
                                                 onSetThemeMode = viewModel::setThemeMode,
                                                 onSetThemeStyle = viewModel::setThemeStyle,
-                                                onSetNotificationsEnabled = viewModel::setNotificationsEnabled,
-                                                onRequestNotificationPermission = {
-                                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                                        notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                                    }
-                                                },
-                                                onSendTestNotification = viewModel::sendTestFriendNotification,
-                                                onRequestAdminLogin = { showAdminPinDialog = true },
-                                                onExitAdminMode = viewModel::exitAdminMode,
-                                                onRequestGuruLogin = { showGuruPinDialog = true },
-                                                onExitGuruMode = viewModel::exitGuruMode,
                                                 onSignOut = onSignOut
                                             )
                                         }
@@ -684,150 +670,504 @@ private fun ClassXiPortalRoot(
 @Composable
 private fun ClassXiTopHeader(
     data: ClassPortalData,
+    onLogoClick: () -> Unit,
+    onOpenSettings: () -> Unit,
     onSearchChange: (String) -> Unit,
-    onToggleAdmin: () -> Unit,
-    onToggleDarkTheme: () -> Unit
+    onToggleAdmin: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Brush.linearGradient(listOf(RoyalBlueBright, RoyalBlue, RoyalBlueDark)))
-            .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    val isGlass = LocalLiquidGlass.current
+    val isDark = LocalIsDarkTheme.current
+
+    val headerBrush = when {
+        isGlass && isDark -> Brush.linearGradient(listOf(Color(0xCC145AE6), Color(0xD6083096)))
+        isGlass -> Brush.linearGradient(listOf(Color(0xEB1276FF), Color(0xE0004CCC)))
+        isDark -> Brush.linearGradient(listOf(Color(0xFF0A4FC4), RoyalBlueDeep))
+        else -> Brush.linearGradient(listOf(RoyalBlueBright, RoyalBlueMid))
+    }
+
+    val headerDateLabel = remember {
+        SimpleDateFormat("EEEE, d MMMM yyyy", Locale("id", "ID")).format(Date())
+    }
+
+    Surface(
+        shape = RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp),
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(headerBrush)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.weight(1f)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
+                // Top identity + controls row (matches .app-header lines 745-777)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(Icons.Rounded.School, contentDescription = "Logo CLASS XI", tint = Color.White, modifier = Modifier.size(22.dp))
-                }
-                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable(onClick = onLogoClick)
+                            .minimumInteractiveComponentSize()
+                            .testTag("topbar_logo_home")
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(if (isGlass) Color(0xEDFFFFFF) else Color.White)
+                                .padding(3.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.logo_puspita),
+                                contentDescription = "Logo SMA Puspita CLASS XI",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "CLASS XI",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 17.sp
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(50),
+                                    color = Color.White.copy(alpha = 0.20f)
+                                ) {
+                                    Text(
+                                        text = "SMA Puspita",
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = headerDateLabel,
+                                color = Color.White.copy(alpha = 0.80f),
+                                fontSize = 11.5.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = "CLASS XI",
-                            color = Color.White,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 17.sp
-                        )
-                        Box(
+                        IconButton(
+                            onClick = onOpenSettings,
                             modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(if (data.isOnlineSynced) EmeraldKas else RoseAlpa)
-                        )
+                                .minimumInteractiveComponentSize()
+                                .testTag("topbar_settings_btn")
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.22f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Settings,
+                                    contentDescription = "Pengaturan Tampilan",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        val adminBg = when {
+                            data.isAdminMode -> EmeraldKas
+                            isGlass -> Color.White.copy(alpha = 0.86f)
+                            else -> Color.White
+                        }
+                        val adminFg = if (data.isAdminMode) Color.White else RoyalBlue
+                        Surface(
+                            shape = RoundedCornerShape(11.dp),
+                            color = adminBg,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(11.dp))
+                                .clickable(onClick = onToggleAdmin)
+                                .minimumInteractiveComponentSize()
+                                .testTag("topbar_admin_toggle")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (data.isAdminMode) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                                    contentDescription = "Mode Pengurus",
+                                    tint = adminFg,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = if (data.isAdminMode) data.activePengurusRole else "Mode Pengurus",
+                                    color = adminFg,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 11.5.sp,
+                                    maxLines = 1
+                                )
+                            }
+                        }
                     }
+                }
+
+                // v9 Global Search bar (#globalSearch)
+                val searchBg = when {
+                    isGlass -> Color.White.copy(alpha = 0.22f)
+                    isDark -> Color(0xF0131C2E)
+                    else -> Color(0xF5FFFFFF)
+                }
+                val searchBorder = when {
+                    isGlass -> Color.White.copy(alpha = 0.45f)
+                    isDark -> Color.White.copy(alpha = 0.14f)
+                    else -> Color.White.copy(alpha = 0.70f)
+                }
+                val searchTextColor = when {
+                    isGlass -> Color.White
+                    isDark -> Color(0xFFF1F5F9)
+                    else -> Color(0xFF0F172A)
+                }
+                val searchPlaceholderColor = when {
+                    isGlass -> Color.White.copy(alpha = 0.78f)
+                    isDark -> Color(0xFF94A3B8)
+                    else -> Color(0xFF64748B)
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = searchBg,
+                    border = BorderStroke(1.dp, searchBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Search,
+                            contentDescription = null,
+                            tint = searchPlaceholderColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Box(modifier = Modifier.weight(1f)) {
+                            if (data.globalSearch.isEmpty()) {
+                                Text(
+                                    text = "Cari siswa, pengumuman, atau materi...",
+                                    color = searchPlaceholderColor,
+                                    fontSize = 12.5.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            BasicTextField(
+                                value = data.globalSearch,
+                                onValueChange = onSearchChange,
+                                singleLine = true,
+                                textStyle = TextStyle(
+                                    color = searchTextColor,
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                cursorBrush = SolidColor(if (isGlass) Color.White else RoyalBlue),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("topbar_global_search")
+                            )
+                        }
+                        if (data.globalSearch.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .clip(CircleShape)
+                                    .background(searchPlaceholderColor.copy(alpha = 0.18f))
+                                    .clickable { onSearchChange("") }
+                                    .testTag("topbar_search_clear"),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = "Hapus pencarian",
+                                    tint = searchTextColor,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun V9StatusStrip(
+    pendingLeaveCount: Int,
+    isOnlineSynced: Boolean,
+    onClickPendingLeave: () -> Unit
+) {
+    val isDark = LocalIsDarkTheme.current
+    val isGlass = LocalLiquidGlass.current
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (pendingLeaveCount > 0) {
+            val pendingBg = when {
+                isGlass -> Color(0x28F59E0B)
+                isDark -> Color(0x2EF59E0B)
+                else -> Color(0xFFFFFBEB)
+            }
+            val pendingBorder = if (isDark) Color(0x55F59E0B) else Color(0xFFFDE68A)
+            val pendingText = if (isDark) Color(0xFFFCD34D) else Color(0xFFB45309)
+
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = pendingBg,
+                border = BorderStroke(1.dp, pendingBorder),
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .padding(end = 8.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable(onClick = onClickPendingLeave)
+                    .testTag("status_pending_leave_pill")
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(AmberSakit)
+                    )
                     Text(
-                        text = stringResource(R.string.school_name),
-                        color = Color(0xFFDBEAFE),
-                        fontSize = 11.sp,
+                        text = "$pendingLeaveCount Surat Izin/Sakit menunggu verifikasi",
+                        color = pendingText,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
             }
+        } else {
+            Spacer(modifier = Modifier.width(1.dp))
+        }
 
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = if (data.isAdminMode) Color(0xFF10B981) else Color.White.copy(alpha = 0.18f),
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .clickable { onToggleAdmin() }
-                        .minimumInteractiveComponentSize()
-                        .testTag("topbar_admin_toggle")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.AdminPanelSettings,
-                            contentDescription = "Mode Pengurus",
-                            tint = Color.White,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Text(
-                            text = if (data.isAdminMode) data.activePengurusRole else "Pengurus",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                            maxLines = 1
-                        )
-                    }
-                }
+        val cloudBg = when {
+            isOnlineSynced && isDark -> Color(0x2210B981)
+            isOnlineSynced -> Color(0xFFECFDF5)
+            isDark -> Color(0x22F59E0B)
+            else -> Color(0xFFFFFBEB)
+        }
+        val cloudBorder = when {
+            isOnlineSynced && isDark -> Color(0x5010B981)
+            isOnlineSynced -> Color(0xFFA7F3D0)
+            isDark -> Color(0x50F59E0B)
+            else -> Color(0xFFFDE68A)
+        }
+        val cloudFg = when {
+            isOnlineSynced && isDark -> Color(0xFF6EE7B7)
+            isOnlineSynced -> EmeraldDark
+            isDark -> Color(0xFFFCD34D)
+            else -> Color(0xFFB45309)
+        }
+        val dotColor = if (isOnlineSynced) Color(0xFF10B981) else AmberSakit
 
-                IconButton(
-                    onClick = onToggleDarkTheme,
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = cloudBg,
+            border = BorderStroke(1.dp, cloudBorder),
+            modifier = Modifier.testTag("status_cloud_pill")
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Box(
                     modifier = Modifier
-                        .minimumInteractiveComponentSize()
-                        .testTag("topbar_theme_toggle")
+                        .size(7.dp)
+                        .clip(CircleShape)
+                        .background(dotColor)
+                )
+                Text(
+                    text = if (isOnlineSynced) "Online" else "Menyinkronkan...",
+                    color = cloudFg,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun V9BottomBar(
+    isBerandaSelected: Boolean,
+    onSelectBeranda: () -> Unit,
+    onOpenScanner: () -> Unit
+) {
+    val isGlass = LocalLiquidGlass.current
+    val isDark = LocalIsDarkTheme.current
+    val activeBlue = if (isDark) Color(0xFF5B9BFF) else RoyalBlue
+    val inactiveSlate = if (isDark) TextMutedDark else TextMutedLight
+
+    if (isGlass) {
+        val pillBg = if (isDark) Color(0xB8162040) else Color(0xD6FFFFFF)
+        val pillBorder = if (isDark) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.90f)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(start = 14.dp, end = 14.dp, bottom = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                shape = RoundedCornerShape(26.dp),
+                color = pillBg,
+                border = BorderStroke(1.dp, pillBorder),
+                modifier = Modifier
+                    .widthIn(max = 448.dp)
+                    .fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = if (data.preferences.themeMode == ThemeMode.DARK) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
-                        contentDescription = "Ganti mode tema",
-                        tint = Color.White
+                    V9BottomNavItem(
+                        icon = Icons.Rounded.Home,
+                        label = "Beranda",
+                        color = if (isBerandaSelected) activeBlue else inactiveSlate,
+                        onClick = onSelectBeranda,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("nav_beranda")
+                    )
+                    V9BottomNavItem(
+                        icon = Icons.Rounded.QrCodeScanner,
+                        label = "Scan QR",
+                        color = activeBlue,
+                        onClick = onOpenScanner,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("nav_scan_qr")
                     )
                 }
             }
         }
-
-        OutlinedTextField(
-            value = data.globalSearch,
-            onValueChange = onSearchChange,
-            placeholder = {
-                Text(
-                    text = "Cari siswa, pengumuman, materi, atau galeri...",
-                    fontSize = 12.5.sp,
-                    color = Color(0xFFDBEAFE)
-                )
-            },
-            leadingIcon = {
-                Icon(Icons.Rounded.Search, contentDescription = null, tint = Color(0xFFDBEAFE), modifier = Modifier.size(18.dp))
-            },
-            trailingIcon = {
-                if (data.globalSearch.isNotEmpty()) {
-                    IconButton(
-                        onClick = { onSearchChange("") },
-                        modifier = Modifier
-                            .minimumInteractiveComponentSize()
-                            .testTag("topbar_search_clear")
-                    ) {
-                        Icon(Icons.Rounded.Close, contentDescription = "Hapus pencarian", tint = Color.White, modifier = Modifier.size(18.dp))
-                    }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = Color.White.copy(alpha = 0.6f),
-                unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
-                focusedContainerColor = Color.White.copy(alpha = 0.14f),
-                unfocusedContainerColor = Color.White.copy(alpha = 0.12f),
-                cursorColor = Color.White
-            ),
+    } else {
+        val barBg = if (isDark) NavBarDark else Color.White
+        val borderCol = if (isDark) DividerDark else OutlineLight
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag("topbar_global_search")
+                .background(barBg)
+                .navigationBarsPadding()
+        ) {
+            HorizontalDivider(thickness = 1.dp, color = borderCol)
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    modifier = Modifier
+                        .widthIn(max = 448.dp)
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    V9BottomNavItem(
+                        icon = Icons.Rounded.Home,
+                        label = "Beranda",
+                        color = if (isBerandaSelected) activeBlue else inactiveSlate,
+                        onClick = onSelectBeranda,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("nav_beranda")
+                    )
+                    V9BottomNavItem(
+                        icon = Icons.Rounded.QrCodeScanner,
+                        label = "Scan QR",
+                        color = activeBlue,
+                        onClick = onOpenScanner,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("nav_scan_qr")
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun V9BottomNavItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .minimumInteractiveComponentSize()
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = color,
+            modifier = Modifier.size(21.dp)
+        )
+        Text(
+            text = label,
+            color = color,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
         )
     }
 }

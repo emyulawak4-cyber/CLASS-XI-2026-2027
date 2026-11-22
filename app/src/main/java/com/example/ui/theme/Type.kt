@@ -16,42 +16,43 @@ val PlusJakartaSans = FontFamily(
     Font(R.font.plus_jakarta_sans, FontWeight.ExtraBold)
 )
 
-val JetBrainsMono = FontFamily(
-    Font(R.font.jetbrains_mono, FontWeight.Medium),
-    Font(R.font.jetbrains_mono, FontWeight.SemiBold),
-    Font(R.font.jetbrains_mono, FontWeight.Bold)
-)
+// Matches v9 CSS rule: .font-mono,.tabular-nums { font-family: 'Plus Jakarta Sans'; font-variant-numeric: tabular-nums; }
+val JetBrainsMono = PlusJakartaSans
 
 val ClassXiTypography = Typography(
     headlineLarge = TextStyle(
         fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.ExtraBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 26.sp,
-        lineHeight = 32.sp
+        lineHeight = 32.sp,
+        letterSpacing = (-0.3).sp
     ),
     headlineMedium = TextStyle(
         fontFamily = PlusJakartaSans,
         fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
-        lineHeight = 26.sp
+        lineHeight = 26.sp,
+        letterSpacing = (-0.2).sp
     ),
     titleLarge = TextStyle(
         fontFamily = PlusJakartaSans,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
-        lineHeight = 24.sp
+        lineHeight = 24.sp,
+        letterSpacing = (-0.15).sp
     ),
     titleMedium = TextStyle(
         fontFamily = PlusJakartaSans,
         fontWeight = FontWeight.Bold,
-        fontSize = 15.sp,
-        lineHeight = 20.sp
+        fontSize = 14.5.sp,
+        lineHeight = 20.sp,
+        letterSpacing = (-0.1).sp
     ),
     bodyLarge = TextStyle(
         fontFamily = PlusJakartaSans,
         fontWeight = FontWeight.Normal,
-        fontSize = 15.sp,
-        lineHeight = 22.sp
+        fontSize = 14.5.sp,
+        lineHeight = 21.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = PlusJakartaSans,
@@ -61,9 +62,9 @@ val ClassXiTypography = Typography(
     ),
     labelLarge = TextStyle(
         fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.Bold,
-        fontSize = 13.sp,
-        lineHeight = 18.sp
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 12.5.sp,
+        lineHeight = 17.sp
     ),
     labelSmall = TextStyle(
         fontFamily = PlusJakartaSans,

@@ -21,12 +21,17 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -38,15 +43,21 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.LocalIsDarkTheme
 import com.example.ui.theme.LocalLiquidGlass
+import com.example.ui.theme.RoyalBlue
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
@@ -67,19 +78,31 @@ fun ClassCard(
     modifier: Modifier = Modifier,
     borderColor: Color = MaterialTheme.colorScheme.outline,
     containerColor: Color = MaterialTheme.colorScheme.surface,
+    contentPadding: PaddingValues = PaddingValues(16.dp),
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isGlass = LocalLiquidGlass.current
-    val resolvedBg = if (isGlass) MaterialTheme.colorScheme.surface.copy(alpha = 0.78f) else containerColor
-    val resolvedBorder = if (isGlass) Color.White.copy(alpha = 0.55f) else borderColor
+    val isDark = LocalIsDarkTheme.current
+    val shape = RoundedCornerShape(if (isGlass) 22.dp else 16.dp)
+    val resolvedBg = if (isGlass) {
+        if (isDark) Color(0x88182242) else Color(0xA6FFFFFF)
+    } else {
+        containerColor
+    }
+    val resolvedBorder = if (isGlass) {
+        if (isDark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.80f)
+    } else {
+        borderColor
+    }
+
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = shape,
         colors = CardDefaults.cardColors(containerColor = resolvedBg),
         border = BorderStroke(1.dp, resolvedBorder),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isGlass) 4.dp else 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp), content = content)
+        Column(modifier = Modifier.padding(contentPadding), content = content)
     }
 }
 
@@ -89,28 +112,124 @@ fun GlassBackdropBox(
     content: @Composable () -> Unit
 ) {
     val isGlass = LocalLiquidGlass.current
-    val bgBrush = if (isGlass) {
-        Brush.verticalGradient(
-            colors = listOf(
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
-                MaterialTheme.colorScheme.background,
-                MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)
-            )
-        )
-    } else {
-        Brush.verticalGradient(
-            colors = listOf(
-                MaterialTheme.colorScheme.background,
-                MaterialTheme.colorScheme.background
-            )
-        )
-    }
+    val isDark = LocalIsDarkTheme.current
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(bgBrush)
+            .background(
+                if (isGlass) {
+                    if (isDark) Color(0xFF060B18) else Color(0xFFE4EEFF)
+                } else {
+                    MaterialTheme.colorScheme.background
+                }
+            )
     ) {
+        if (isGlass) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+                val baseStops = if (isDark) {
+                    listOf(Color(0xFF060B18), Color(0xFF091229), Color(0xFF060B18))
+                } else {
+                    listOf(Color(0xFFE4EEFF), Color(0xFFEEF3FF), Color(0xFFE2F4FF))
+                }
+                drawRect(brush = Brush.linearGradient(baseStops))
+
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(if (isDark) 0x802563EB else 0x66007AFF),
+                            Color.Transparent
+                        ),
+                        center = Offset(w * 0.10f, h * 0.08f),
+                        radius = w * 0.65f
+                    ),
+                    center = Offset(w * 0.10f, h * 0.08f),
+                    radius = w * 0.65f
+                )
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(if (isDark) 0x617C3AED else 0x4D8B5CF6),
+                            Color.Transparent
+                        ),
+                        center = Offset(w * 0.96f, h * 0.30f),
+                        radius = w * 0.60f
+                    ),
+                    center = Offset(w * 0.96f, h * 0.30f),
+                    radius = w * 0.60f
+                )
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(if (isDark) 0x660891B2 else 0x5C06B6D4),
+                            Color.Transparent
+                        ),
+                        center = Offset(w * 0.28f, h * 0.96f),
+                        radius = w * 0.65f
+                    ),
+                    center = Offset(w * 0.28f, h * 0.96f),
+                    radius = w * 0.65f
+                )
+            }
+        }
         content()
+    }
+}
+
+@Composable
+fun V9SegmentedControl(
+    options: List<Pair<String, String>>,
+    selectedKey: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = 10.dp
+) {
+    val isGlass = LocalLiquidGlass.current
+    val isDark = LocalIsDarkTheme.current
+    val trackBg = when {
+        isGlass && isDark -> Color.White.copy(alpha = 0.07f)
+        isGlass -> Color.White.copy(alpha = 0.42f)
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(cornerRadius))
+            .background(trackBg)
+            .padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        options.forEach { (key, label) ->
+            val selected = key == selectedKey
+            val pillBg = when {
+                selected && isDark && !isGlass -> Color(0xFF26334D)
+                selected -> MaterialTheme.colorScheme.surface
+                else -> Color.Transparent
+            }
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = pillBg,
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onSelect(key) }
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = label,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -119,19 +238,22 @@ fun StatusBadge(
     text: String,
     containerColor: Color,
     contentColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = 8.dp
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(50),
+        shape = RoundedCornerShape(cornerRadius),
         color = containerColor
     ) {
         Text(
             text = text,
             color = contentColor,
             fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
         )
     }
 }
@@ -146,10 +268,10 @@ fun QrCodeImage(
     }
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(Color.White)
-            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
-            .padding(12.dp)
+            .border(1.dp, Color(0xFFE7ECF3), RoundedCornerShape(14.dp))
+            .padding(10.dp)
     ) {
         if (bitmap != null) {
             Image(

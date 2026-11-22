@@ -138,10 +138,10 @@ fun PresensiScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Text("Presensi Harian", style = MaterialTheme.typography.titleMedium)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Presensi Harian", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         Text(
-                            text = "47 Siswa • Batas Tepat Waktu $JAM_MASUK_NORMAL WIB",
+                            text = "47 Siswa • Tepat waktu ≤ $JAM_MASUK_NORMAL WIB",
                             fontSize = 11.5.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -149,7 +149,7 @@ fun PresensiScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedButton(
                             onClick = { showDatePicker = true },
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(11.dp),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                             modifier = Modifier.testTag("presensi_pick_date_btn")
                         ) {
@@ -161,7 +161,7 @@ fun PresensiScreen(
                             onClick = onSetToday,
                             modifier = Modifier
                                 .size(40.dp)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(11.dp))
                                 .background(MaterialTheme.colorScheme.primaryContainer)
                                 .testTag("presensi_today_btn")
                         ) {
@@ -170,7 +170,32 @@ fun PresensiScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                if (!data.isAdminMode) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.clickable { onRequestAdminLogin() }
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(Icons.Rounded.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
+                            Text(
+                                text = "Mode Siswa: Hanya Lihat • Ketuk untuk Mode Pengurus",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
                     modifier = Modifier
@@ -230,7 +255,7 @@ fun PresensiScreen(
                             PortalFeedback.shareText(context, "Presensi CLASS XI ${data.selectedDate}", report)
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = EmeraldKas),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(11.dp),
                         modifier = Modifier.weight(1f).testTag("presensi_share_wa_btn")
                     ) {
                         Icon(Icons.Rounded.Share, contentDescription = "Bagikan WhatsApp", modifier = Modifier.size(16.dp))
@@ -241,7 +266,7 @@ fun PresensiScreen(
                     if (data.isAdminMode) {
                         Button(
                             onClick = onSetAllHadir,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(11.dp),
                             modifier = Modifier.weight(1f).testTag("presensi_hadir_semua_btn")
                         ) {
                             Icon(Icons.Rounded.CheckCircle, contentDescription = "Hadir Semua", modifier = Modifier.size(16.dp))
@@ -252,7 +277,7 @@ fun PresensiScreen(
                             onClick = onOpenScanner,
                             modifier = Modifier
                                 .size(48.dp)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(11.dp))
                                 .background(MaterialTheme.colorScheme.primaryContainer)
                                 .testTag("presensi_scan_btn")
                         ) {
@@ -261,7 +286,7 @@ fun PresensiScreen(
                     } else {
                         OutlinedButton(
                             onClick = onRequestAdminLogin,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(11.dp),
                             modifier = Modifier.weight(1f).testTag("presensi_unlock_admin_btn")
                         ) {
                             Icon(Icons.Rounded.Lock, contentDescription = "Mode Pengurus", modifier = Modifier.size(15.dp))

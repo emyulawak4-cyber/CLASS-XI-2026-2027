@@ -68,14 +68,21 @@ import com.example.model.KasTransaction
 import com.example.ui.components.ClassCard
 import com.example.ui.components.PortalFeedback
 import com.example.ui.components.StatusBadge
+import com.example.ui.components.V9SegmentedControl
 import com.example.ui.components.formatRupiah
 import com.example.ui.theme.EmeraldDark
 import com.example.ui.theme.EmeraldKas
 import com.example.ui.theme.JetBrainsMono
+import com.example.ui.theme.LocalIsDarkTheme
+import com.example.ui.theme.LocalLiquidGlass
+import com.example.ui.theme.PrimaryTintDark
+import com.example.ui.theme.PrimaryTintLight
 import com.example.ui.theme.RoseAlpa
 import com.example.ui.theme.RoyalBlue
 import com.example.ui.theme.RoyalBlueBright
 import com.example.ui.theme.RoyalBlueDark
+import com.example.ui.theme.RoyalBlueDeep
+import com.example.ui.theme.RoyalBlueMid
 import com.example.viewmodel.ClassPortalData
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -94,6 +101,8 @@ fun KasScreen(
     onRequestAdminLogin: () -> Unit
 ) {
     val context = LocalContext.current
+    val isGlass = LocalLiquidGlass.current
+    val isDark = LocalIsDarkTheme.current
     val summary = data.kasSummaryForPeriod(data.selectedKasPeriod)
     var subView by remember { mutableStateOf("siswa") } // "siswa" | "transaksi"
     var studentFilter by remember { mutableStateOf("ALL") } // "ALL" | "PAID" | "UNPAID"
@@ -150,18 +159,25 @@ fun KasScreen(
         !tx.voided && (txFilter == "ALL" || tx.type == txFilter)
     }
 
+    val heroBrush = when {
+        isGlass && isDark -> Brush.linearGradient(listOf(Color(0xD6125EF0), Color(0xD6083096)))
+        isGlass -> Brush.linearGradient(listOf(Color(0xE01476FF), Color(0xD60048CC)))
+        isDark -> Brush.linearGradient(listOf(Color(0xFF0A4FC4), RoyalBlueDeep))
+        else -> Brush.linearGradient(listOf(RoyalBlueBright, RoyalBlueMid))
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Hero Saldo Card
+        // v9 Royal Blue Kas Hero Card (.kas-hero)
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(Brush.linearGradient(listOf(RoyalBlueBright, RoyalBlue, RoyalBlueDark)))
+                    .clip(RoundedCornerShape(if (isGlass) 22.dp else 18.dp))
+                    .background(heroBrush)
                     .padding(18.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -171,10 +187,10 @@ fun KasScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("UANG KAS CLASS XI", color = Color(0xFFBFDBFE), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            Text("Standar Iuran: Rp 10.000 / Bulan", color = Color(0xFFDBEAFE), fontSize = 11.sp)
+                            Text("UANG KAS CLASS XI", color = Color(0xFFDBEAFE), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text("Standar Iuran: Rp 10.000 / Bulan", color = Color.White.copy(alpha = 0.85f), fontSize = 11.5.sp)
                         }
-                        Surface(shape = RoundedCornerShape(50), color = Color.White.copy(alpha = 0.16f)) {
+                        Surface(shape = RoundedCornerShape(50), color = Color.White.copy(alpha = 0.18f)) {
                             Text(
                                 text = "${summary.paidPercent}% Lunas",
                                 color = Color.White,
@@ -189,27 +205,27 @@ fun KasScreen(
                         text = formatRupiah(summary.saldo),
                         color = Color.White,
                         fontFamily = JetBrainsMono,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 30.sp
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 28.sp
                     )
 
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = Color.White.copy(alpha = 0.15f),
+                            color = Color.White.copy(alpha = 0.16f),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
+                            Column(modifier = Modifier.padding(11.dp)) {
                                 Text("Pemasukan", color = Color(0xFFDBEAFE), fontSize = 11.sp)
                                 Text(formatRupiah(summary.totalIn), color = Color.White, fontFamily = JetBrainsMono, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }
                         }
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = Color.White.copy(alpha = 0.15f),
+                            color = Color.White.copy(alpha = 0.16f),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
+                            Column(modifier = Modifier.padding(11.dp)) {
                                 Text("Pengeluaran", color = Color(0xFFDBEAFE), fontSize = 11.sp)
                                 Text(formatRupiah(summary.totalOut), color = Color.White, fontFamily = JetBrainsMono, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }
@@ -217,32 +233,32 @@ fun KasScreen(
                     }
 
                     // Progress bar
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(8.dp)
+                                .height(7.dp)
                                 .clip(RoundedCornerShape(50))
-                                .background(Color.White.copy(alpha = 0.22f))
+                                .background(Color.White.copy(alpha = 0.24f))
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth(fraction = (summary.paidPercent / 100f).coerceIn(0f, 1f))
-                                    .height(8.dp)
+                                    .height(7.dp)
                                     .clip(RoundedCornerShape(50))
                                     .background(Color.White)
                             )
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("${summary.paidCount}/47 Siswa Lunas", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                            Text("${summary.unpaidCount} Belum Bayar", color = Color(0xFFDBEAFE), fontSize = 11.sp)
+                            Text("${summary.paidCount}/47 Siswa Lunas", color = Color.White, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold)
+                            Text("${summary.unpaidCount} Belum Bayar", color = Color(0xFFDBEAFE), fontSize = 11.5.sp)
                         }
                     }
                 }
             }
         }
 
-        // Period & Nominal Controls
+        // Period, Nominal & v9 Segmented Control
         item {
             ClassCard {
                 Row(
@@ -291,38 +307,23 @@ fun KasScreen(
                         modifier = Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .background(if (isDark) PrimaryTintDark else PrimaryTintLight)
                             .testTag("kas_add_period_btn")
                     ) {
                         Icon(Icons.Rounded.Add, contentDescription = "Tambah Periode Kas", tint = MaterialTheme.colorScheme.primary)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { subView = "siswa" },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (subView == "siswa") RoyalBlue else MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = if (subView == "siswa") Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f).testTag("kas_sub_siswa_btn")
-                    ) {
-                        Text("Status 47 Siswa", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Button(
-                        onClick = { subView = "transaksi" },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (subView == "transaksi") RoyalBlue else MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = if (subView == "transaksi") Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f).testTag("kas_sub_tx_btn")
-                    ) {
-                        Text("Transaksi (${data.kasTransactions.count { !it.voided }})", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
+                Spacer(modifier = Modifier.height(12.dp))
+                V9SegmentedControl(
+                    options = listOf(
+                        "siswa" to "Status 47 Siswa",
+                        "transaksi" to "Transaksi (${data.kasTransactions.count { !it.voided }})"
+                    ),
+                    selectedKey = subView,
+                    onSelect = { subView = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
 

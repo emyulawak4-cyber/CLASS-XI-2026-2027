@@ -171,8 +171,8 @@ fun DokumentasiScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Galeri Dokumentasi",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
@@ -185,6 +185,7 @@ fun DokumentasiScreen(
                         onClick = {
                             if (data.isAdminMode) showUploadDialog = true else onRequestAdminLogin()
                         },
+                        shape = RoundedCornerShape(11.dp),
                         modifier = Modifier
                             .minimumInteractiveComponentSize()
                             .testTag("dok_upload_button")
@@ -210,6 +211,7 @@ fun DokumentasiScreen(
                         FilterChip(
                             selected = selectedFilter == option,
                             onClick = { selectedFilter = option },
+                            shape = RoundedCornerShape(10.dp),
                             label = { Text(option, fontSize = 12.sp) },
                             modifier = Modifier.testTag("dok_filter_${option.lowercase().replace(" ", "_")}")
                         )

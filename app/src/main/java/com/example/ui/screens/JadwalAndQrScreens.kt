@@ -121,8 +121,8 @@ fun JadwalScreen(
             ClassCard {
                 Text(
                     text = "Jadwal Pelajaran & Piket",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -133,31 +133,47 @@ fun JadwalScreen(
                     Icon(
                         imageVector = Icons.Rounded.Schedule,
                         contentDescription = null,
-                        tint = RoyalBlue,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
                         text = "${selectedDay.label}: ${selectedDay.hours}",
-                        fontSize = 12.5.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = RoyalBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     ScheduleDay.entries.forEach { day ->
-                        FilterChip(
-                            selected = day == selectedDay,
-                            onClick = { onSelectDay(day) },
-                            label = { Text(day.label, fontWeight = FontWeight.Bold) },
-                            modifier = Modifier.testTag("jadwal_day_${day.key.lowercase()}")
-                        )
+                        val active = day == selectedDay
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (active) RoyalBlue else MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { onSelectDay(day) }
+                                .minimumInteractiveComponentSize()
+                                .testTag("jadwal_day_${day.key.lowercase()}")
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.padding(vertical = 9.dp, horizontal = 2.dp)
+                            ) {
+                                Text(
+                                    text = day.key.take(3),
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (active) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
+                        }
                     }
                 }
             }

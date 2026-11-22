@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,13 +29,14 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.LocalHospital
+import androidx.compose.material.icons.rounded.NoteAlt
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +54,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -62,10 +67,14 @@ import com.example.model.LeaveRequest
 import com.example.ui.components.ClassCard
 import com.example.ui.components.PortalFeedback
 import com.example.ui.components.StatusBadge
+import com.example.ui.components.V9SegmentedControl
 import com.example.ui.theme.AmberSakit
 import com.example.ui.theme.EmeraldDark
 import com.example.ui.theme.EmeraldKas
 import com.example.ui.theme.JetBrainsMono
+import com.example.ui.theme.LocalIsDarkTheme
+import com.example.ui.theme.PrimaryTintDark
+import com.example.ui.theme.PrimaryTintLight
 import com.example.ui.theme.RoseAlpa
 import com.example.ui.theme.RoyalBlue
 import com.example.ui.theme.SkyBlue
@@ -86,6 +95,7 @@ fun IzinScreen(
     onShowMessage: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val isDark = LocalIsDarkTheme.current
     val fmt = remember { SimpleDateFormat("yyyy-MM-dd", Locale.US) }
     fun offsetDate(days: Int): String {
         val cal = Calendar.getInstance()
@@ -148,21 +158,35 @@ fun IzinScreen(
             }
         }
 
-        // Step 1 Google Forms
+        // Step 1 Google Forms with v9 numbered .step-no badge
         item {
             ClassCard {
-                StatusBadge(
-                    text = "LANGKAH 1",
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Isi Google Forms Resmi Wali Kelas",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 15.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(if (isDark) PrimaryTintDark else PrimaryTintLight),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "1",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Text(
+                        text = "Isi Google Forms Resmi Wali Kelas",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "Sebelum atau setelah mengirim pengajuan di aplikasi, pastikan mengisi formulir resmi Google Forms agar tercatat wali kelas.",
                     fontSize = 12.sp,
@@ -175,6 +199,7 @@ fun IzinScreen(
                 ) {
                     Button(
                         onClick = { PortalFeedback.openUrl(context, GOOGLE_FORM_IZIN_URL) },
+                        shape = RoundedCornerShape(11.dp),
                         modifier = Modifier
                             .weight(1f)
                             .minimumInteractiveComponentSize()
@@ -189,6 +214,7 @@ fun IzinScreen(
                             PortalFeedback.copyToClipboard(context, "Google Forms Izin CLASS XI", GOOGLE_FORM_IZIN_URL)
                             onShowMessage("Link Google Forms disalin.")
                         },
+                        shape = RoundedCornerShape(11.dp),
                         modifier = Modifier
                             .minimumInteractiveComponentSize()
                             .testTag("izin_copy_gform")
@@ -201,38 +227,87 @@ fun IzinScreen(
             }
         }
 
-        // Step 2 Digital Leave Form
+        // Step 2 Digital Leave Form with v9 numbered .step-no badge & .type-btn selector cards
         item {
             ClassCard {
-                StatusBadge(
-                    text = "LANGKAH 2",
-                    containerColor = Color(0xFFECFDF5),
-                    contentColor = EmeraldDark
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Ajukan Surat Sakit / Izin Digital",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("Sakit", "Izin").forEach { typeOption ->
-                        FilterChip(
-                            selected = leaveType == typeOption,
-                            onClick = { leaveType = typeOption },
-                            label = { Text(typeOption, fontWeight = FontWeight.Bold) },
-                            modifier = Modifier.testTag("izin_type_${typeOption.lowercase()}")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(if (isDark) PrimaryTintDark else PrimaryTintLight),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "2",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
+                    }
+                    Text(
+                        text = "Ajukan Surat Sakit / Izin Digital",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(
+                        Triple("Sakit", AmberSakit, Icons.Rounded.LocalHospital),
+                        Triple("Izin", SkyBlue, Icons.Rounded.NoteAlt)
+                    ).forEach { (typeOption, accent, typeIcon) ->
+                        val active = leaveType == typeOption
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (active) accent.copy(alpha = if (isDark) 0.20f else 0.10f) else MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(
+                                width = 1.5.dp,
+                                color = if (active) accent else MaterialTheme.colorScheme.outline
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { leaveType = typeOption }
+                                .minimumInteractiveComponentSize()
+                                .testTag("izin_type_${typeOption.lowercase()}")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 11.dp, horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = typeIcon,
+                                    contentDescription = typeOption,
+                                    tint = if (active) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(17.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = typeOption,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 13.sp,
+                                    color = if (active) accent else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(
                         onClick = { showStudentDropdown = true },
+                        shape = RoundedCornerShape(11.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .minimumInteractiveComponentSize()
@@ -278,6 +353,7 @@ fun IzinScreen(
                     onValueChange = { dateInput = it.take(10) },
                     label = { Text("Tanggal Izin (YYYY-MM-DD)") },
                     singleLine = true,
+                    shape = RoundedCornerShape(11.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("izin_date_input")
@@ -301,6 +377,7 @@ fun IzinScreen(
                     supportingText = { Text("${reason.length}/200 karakter") },
                     minLines = 2,
                     maxLines = 4,
+                    shape = RoundedCornerShape(11.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("izin_reason_input")
@@ -359,6 +436,7 @@ fun IzinScreen(
                             }
                         }
                     },
+                    shape = RoundedCornerShape(11.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .minimumInteractiveComponentSize()
@@ -371,23 +449,19 @@ fun IzinScreen(
             }
         }
 
-        // Riwayat & Verifikasi
+        // Riwayat & Verifikasi Segmented Filter (.seg)
         item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf("Semua", "Menunggu", "Disetujui", "Ditolak").forEach { st ->
-                    FilterChip(
-                        selected = statusFilter == st,
-                        onClick = { statusFilter = st },
-                        label = { Text(st, fontSize = 12.sp) },
-                        modifier = Modifier.testTag("izin_filter_${st.lowercase()}")
-                    )
-                }
-            }
+            V9SegmentedControl(
+                options = listOf(
+                    "Semua" to "Semua",
+                    "Menunggu" to "Menunggu",
+                    "Disetujui" to "Disetujui",
+                    "Ditolak" to "Ditolak"
+                ),
+                selectedKey = statusFilter,
+                onSelect = { statusFilter = it },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
 
         if (filteredLeaves.isEmpty()) {

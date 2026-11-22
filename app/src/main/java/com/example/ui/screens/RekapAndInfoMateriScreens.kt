@@ -23,29 +23,32 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.AttachFile
+import androidx.compose.material.icons.rounded.Bookmarks
 import androidx.compose.material.icons.rounded.Campaign
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
-import androidx.compose.material.icons.rounded.NotificationsActive
-import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material.icons.rounded.Print
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.UploadFile
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -72,19 +75,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.ClassConstants
 import com.example.model.MateriItem
-import com.example.notifications.NotificationHelper
 import com.example.ui.components.ClassCard
 import com.example.ui.components.MediaEncodingUtil
 import com.example.ui.components.MediaImageBox
 import com.example.ui.components.PortalFeedback
 import com.example.ui.components.StatusBadge
 import com.example.ui.theme.AmberSakit
-import com.example.ui.theme.EmeraldDark
+import com.example.ui.theme.DividerDark
+import com.example.ui.theme.DividerLight
 import com.example.ui.theme.EmeraldKas
-import com.example.ui.theme.JetBrainsMono
+import com.example.ui.theme.LocalIsDarkTheme
+import com.example.ui.theme.PrimaryTintDark
+import com.example.ui.theme.PrimaryTintLight
 import com.example.ui.theme.RoseAlpa
 import com.example.ui.theme.RoyalBlue
-import com.example.ui.theme.RoyalBlueBright
 import com.example.ui.theme.RoyalBlueDark
 import com.example.ui.theme.SkyBlue
 import com.example.ui.theme.VioletDispen
@@ -169,11 +173,11 @@ fun RekapScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Rekapitulasi Kehadiran Guru",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 17.sp
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
                         )
                         Text(
-                            text = "SMA Puspita Kota Tangerang • $effectiveDays hari tercatat",
+                            text = "SMA Puspita Kota Tangerang • Efektif $effectiveDays hari",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -181,7 +185,7 @@ fun RekapScreen(
                     StatusBadge(
                         text = "47 Siswa",
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = RoyalBlue
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
                 }
 
@@ -189,12 +193,13 @@ fun RekapScreen(
                 Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(
                         onClick = { showMonthDropdown = true },
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .minimumInteractiveComponentSize()
                             .testTag("rekap_month_dropdown")
                     ) {
-                        Text(selectedMonthLabel, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                        Text(selectedMonthLabel, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
                         Icon(Icons.Rounded.ArrowDropDown, contentDescription = "Pilih periode rekap")
                     }
                     DropdownMenu(
@@ -230,14 +235,15 @@ fun RekapScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(
+                    OutlinedButton(
                         onClick = { csvLauncher.launch("Rekap_Presensi_CLASS_XI_$selectedMonth.csv") },
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .weight(1f)
                             .minimumInteractiveComponentSize()
                             .testTag("rekap_export_csv")
                     ) {
-                        Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("CSV", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
@@ -257,16 +263,17 @@ fun RekapScreen(
                             """.trimIndent()
                             PortalFeedback.printHtmlReport(context, "Rekap_CLASS_XI_$selectedMonth", html)
                         },
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .weight(1f)
                             .minimumInteractiveComponentSize()
                             .testTag("rekap_print_pdf")
                     ) {
-                        Icon(Icons.Rounded.Print, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Rounded.Print, contentDescription = null, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Cetak", fontSize = 12.sp)
+                        Text("Cetak", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
-                    OutlinedButton(
+                    Button(
                         onClick = {
                             val summaryText = buildString {
                                 appendLine("*REKAP PRESENSI CLASS XI ($selectedMonthLabel)*")
@@ -280,14 +287,15 @@ fun RekapScreen(
                             }
                             PortalFeedback.shareText(context, "Rekap Presensi CLASS XI", summaryText)
                         },
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .weight(1f)
                             .minimumInteractiveComponentSize()
                             .testTag("rekap_share_wa")
                     ) {
-                        Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("WA", fontSize = 12.sp)
+                        Text("WA", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -299,18 +307,15 @@ fun RekapScreen(
                 "Cukup" -> AmberSakit
                 else -> EmeraldKas
             }
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.surface,
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            ClassCard(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .clickable { onOpenStudentQr(row.student.id) }
-                    .testTag("rekap_row_${row.student.id}")
+                    .testTag("rekap_row_${row.student.id}"),
+                contentPadding = PaddingValues(13.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -324,7 +329,7 @@ fun RekapScreen(
                         )
                         Text(
                             text = "H:${row.h}  I:${row.i}  S:${row.s}  D:${row.d}  A:${row.a}  • Piket ${row.student.piket}",
-                            fontFamily = JetBrainsMono,
+                            style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum"),
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -333,8 +338,8 @@ fun RekapScreen(
                     Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(
                             text = "${row.percent}%",
-                            fontFamily = JetBrainsMono,
-                            fontWeight = FontWeight.ExtraBold,
+                            style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum"),
+                            fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                             color = stColor
                         )
@@ -360,13 +365,19 @@ private fun RekapMetricPill(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        color = color.copy(alpha = 0.12f)
+        color = color.copy(alpha = 0.11f)
     ) {
         Column(
             modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(value, fontFamily = JetBrainsMono, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = color)
+            Text(
+                value,
+                style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum"),
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.5.sp,
+                color = color
+            )
             Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -377,17 +388,14 @@ fun InfoScreen(
     data: ClassPortalData,
     currentUid: String,
     onRequestAdminLogin: () -> Unit,
-    onRequestNotificationPermission: () -> Unit,
-    onSendTestNotification: () -> Unit,
     onAddAnnouncement: (title: String, category: String, deadline: String, desc: String, imageBase64: String?) -> Unit,
     onDeleteAnnouncement: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val isDark = LocalIsDarkTheme.current
+    val dividerColor = if (isDark) DividerDark else DividerLight
     var categoryFilter by remember { mutableStateOf("Semua") }
     var showCreateDialog by remember { mutableStateOf(false) }
-
-    val hasDevicePerm = NotificationHelper.hasNotificationPermission(context)
-    val notifActive = hasDevicePerm && data.preferences.notificationsEnabled
 
     val q = data.globalSearch.trim().lowercase()
     val filtered = remember(data.announcements, categoryFilter, q) {
@@ -406,59 +414,7 @@ fun InfoScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Friend notification status banner
-        item {
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = if (notifActive) Color(0xFFECFDF5) else Color(0xFFFEF3C7),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (notifActive) Icons.Rounded.NotificationsActive else Icons.Rounded.NotificationsOff,
-                            contentDescription = "Status Notifikasi Teman",
-                            tint = if (notifActive) EmeraldDark else Color(0xFFB45309)
-                        )
-                        Column {
-                            Text(
-                                text = if (notifActive) "Notifikasi Real-time Teman Aktif" else "Aktifkan Notifikasi Perangkat",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 13.sp,
-                                color = if (notifActive) EmeraldDark else Color(0xFF92400E)
-                            )
-                            Text(
-                                text = if (notifActive) "Info & surat baru langsung muncul ke seluruh HP teman." else "Izinkan notifikasi agar pengumuman teman tidak terlewat.",
-                                fontSize = 11.sp,
-                                color = if (notifActive) Color(0xFF065F46) else Color(0xFF92400E)
-                            )
-                        }
-                    }
-                    TextButton(
-                        onClick = {
-                            if (hasDevicePerm) onSendTestNotification() else onRequestNotificationPermission()
-                        },
-                        modifier = Modifier
-                            .minimumInteractiveComponentSize()
-                            .testTag("info_notif_action")
-                    ) {
-                        Text(
-                            text = if (hasDevicePerm) "Tes Notif" else "Izinkan",
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
-
+        // Note: Real-time friend notifications banner / "Tes Notif" removed per user request while keeping background notifications active.
         item {
             ClassCard {
                 Row(
@@ -467,9 +423,9 @@ fun InfoScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Info & Agenda Broadcast", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
+                        Text("Info & Agenda Kelas", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         Text(
-                            text = "Pengumuman langsung mengirim notifikasi ke teman sekelas",
+                            text = "Pengumuman resmi & pengingat tugas CLASS XI",
                             fontSize = 11.5.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -478,13 +434,14 @@ fun InfoScreen(
                         onClick = {
                             if (data.isAdminMode) showCreateDialog = true else onRequestAdminLogin()
                         },
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .minimumInteractiveComponentSize()
                             .testTag("info_add_button")
                     ) {
                         Icon(Icons.Rounded.Campaign, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Broadcast", fontWeight = FontWeight.Bold)
+                        Text("Broadcast", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }
                 Spacer(modifier = Modifier.height(10.dp))
@@ -494,13 +451,24 @@ fun InfoScreen(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf("Semua", "Penting", "Tugas", "Event").forEach { cat ->
-                        FilterChip(
-                            selected = categoryFilter == cat,
-                            onClick = { categoryFilter = cat },
-                            label = { Text(cat, fontSize = 12.sp) },
-                            modifier = Modifier.testTag("info_filter_${cat.lowercase()}")
-                        )
+                    listOf("Semua" to "Semua", "Penting" to "Penting", "Tugas" to "Tugas", "Event" to "Agenda").forEach { (catKey, label) ->
+                        val selected = categoryFilter == catKey
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (selected) RoyalBlue else MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { categoryFilter = catKey }
+                                .testTag("info_filter_${catKey.lowercase()}")
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 12.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+                                color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -509,11 +477,29 @@ fun InfoScreen(
         if (filtered.isEmpty()) {
             item {
                 ClassCard {
-                    Text(
-                        text = "Belum ada pengumuman untuk kategori ini.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Rounded.Campaign, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                        Text("Belum Ada Pengumuman Kelas", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(
+                            text = "Pengurus kelas dapat menambahkan informasi tugas atau agenda melalui tombol Broadcast.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
         } else {
@@ -527,29 +513,79 @@ fun InfoScreen(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                StatusBadge(
-                                    text = ann.category,
-                                    containerColor = catColor.copy(alpha = 0.14f),
-                                    contentColor = catColor
-                                )
-                                StatusBadge(
-                                    text = ann.deadline,
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Text(ann.title, fontWeight = FontWeight.ExtraBold, fontSize = 15.5.sp)
-                            Text(
-                                text = "${ann.author} • ${ann.dateLabel}",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Row {
+                        StatusBadge(
+                            text = ann.category,
+                            containerColor = catColor.copy(alpha = 0.14f),
+                            contentColor = catColor
+                        )
+                        Text(
+                            text = ann.dateLabel,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(ann.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+
+                    if (!ann.imageBase64.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        MediaImageBox(
+                            url = ann.imageBase64,
+                            contentDescription = "Lampiran ${ann.title}",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = ann.desc,
+                        fontSize = 12.5.sp,
+                        lineHeight = 18.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(thickness = 1.dp, color = dividerColor)
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Tenggat:",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = ann.deadline,
+                            style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum"),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Oleh: ${ann.author}",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(
                                 onClick = {
                                     PortalFeedback.shareText(
@@ -562,7 +598,7 @@ fun InfoScreen(
                                     .minimumInteractiveComponentSize()
                                     .testTag("info_share_${ann.id}")
                             ) {
-                                Icon(Icons.Rounded.Share, contentDescription = "Bagikan info ke teman", tint = RoyalBlue)
+                                Icon(Icons.Rounded.Share, contentDescription = "Bagikan info ke teman", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                             }
                             if (ann.userId == currentUid) {
                                 IconButton(
@@ -571,26 +607,11 @@ fun InfoScreen(
                                         .minimumInteractiveComponentSize()
                                         .testTag("info_delete_${ann.id}")
                                 ) {
-                                    Icon(Icons.Rounded.DeleteOutline, contentDescription = "Hapus info", tint = RoseAlpa)
+                                    Icon(Icons.Rounded.DeleteOutline, contentDescription = "Hapus info", tint = RoseAlpa, modifier = Modifier.size(18.dp))
                                 }
                             }
                         }
                     }
-
-                    if (!ann.imageBase64.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        MediaImageBox(
-                            url = ann.imageBase64,
-                            contentDescription = "Lampiran ${ann.title}",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(180.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(ann.desc, fontSize = 13.sp, lineHeight = 19.sp)
                 }
             }
         }
@@ -643,7 +664,7 @@ private fun BroadcastAnnouncementDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Broadcast Info & Notifikasi", fontWeight = FontWeight.ExtraBold) },
+        title = { Text("Broadcast Info & Agenda", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
@@ -718,7 +739,7 @@ private fun BroadcastAnnouncementDialog(
                     .minimumInteractiveComponentSize()
                     .testTag("info_dialog_submit")
             ) {
-                Text("Kirim & Notifikasi")
+                Text("Kirim")
             }
         },
         dismissButton = {
@@ -751,6 +772,7 @@ fun MateriScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val isDark = LocalIsDarkTheme.current
     var mapelFilter by remember { mutableStateOf("Semua") }
     var sortMode by remember { mutableStateOf("Terbaru") }
     var showUploadDialog by remember { mutableStateOf(false) }
@@ -808,54 +830,91 @@ fun MateriScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Bank Materi CLASS XI", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-                        Text(
-                            text = "${data.materi.size} modul & catatan pembelajaran tersedia",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    OutlinedButton(
-                        onClick = { if (data.isGuruMode) onExitGuruMode() else onRequestGuruLogin() },
-                        modifier = Modifier
-                            .minimumInteractiveComponentSize()
-                            .testTag("materi_guru_mode_button")
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = if (data.isGuruMode) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(if (data.isGuruMode) "Guru Aktif" else "Mode Guru", fontSize = 12.sp)
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(13.dp))
+                                .background(if (isDark) PrimaryTintDark else PrimaryTintLight),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Rounded.Bookmarks, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                        Column {
+                            Text("Bank Materi", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text(
+                                text = "${data.materi.size} materi dari guru mapel",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (data.isGuruMode) {
+                            OutlinedButton(
+                                onClick = onExitGuruMode,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .minimumInteractiveComponentSize()
+                                    .testTag("materi_guru_mode_button")
+                            ) {
+                                Icon(Icons.Rounded.LockOpen, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Keluar", fontSize = 11.5.sp)
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = onRequestGuruLogin,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .minimumInteractiveComponentSize()
+                                    .testTag("materi_guru_mode_button")
+                            ) {
+                                Icon(Icons.Rounded.Lock, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Guru", fontSize = 11.5.sp)
+                            }
+                        }
+                        Button(
+                            onClick = { if (data.isGuruMode) showUploadDialog = true else onRequestGuruLogin() },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .minimumInteractiveComponentSize()
+                                .testTag("materi_upload_button")
+                        ) {
+                            Icon(Icons.Rounded.UploadFile, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Upload", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf("Terbaru", "Terlama", "Populer").forEach { sm ->
-                            FilterChip(
-                                selected = sortMode == sm,
-                                onClick = { sortMode = sm },
-                                label = { Text(sm, fontSize = 11.5.sp) }
+                    listOf("Terbaru", "Terlama", "Populer").forEach { sm ->
+                        val selected = sortMode == sm
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (selected) RoyalBlue else MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { sortMode = sm }
+                        ) {
+                            Text(
+                                text = sm,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
                             )
                         }
-                    }
-                    Button(
-                        onClick = { if (data.isGuruMode) showUploadDialog = true else onRequestGuruLogin() },
-                        modifier = Modifier
-                            .minimumInteractiveComponentSize()
-                            .testTag("materi_upload_button")
-                    ) {
-                        Icon(Icons.Rounded.UploadFile, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Upload", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -883,8 +942,8 @@ fun MateriScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(Brush.linearGradient(listOf(RoyalBlueBright, RoyalBlue, RoyalBlueDark)))
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Brush.linearGradient(listOf(RoyalBlue, RoyalBlueDark)))
                         .padding(16.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -894,7 +953,7 @@ fun MateriScreen(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        Text(latest.title, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                        Text(latest.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.5.sp)
                         Text(
                             text = "${latest.guru} • ${latest.dateLabel} • ${latest.dl}x diunduh",
                             color = Color(0xFFDBEAFE),
@@ -927,9 +986,9 @@ fun MateriScreen(
                             StatusBadge(
                                 text = item.mapel,
                                 containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = RoyalBlue
+                                contentColor = MaterialTheme.colorScheme.primary
                             )
-                            Text(item.title, fontWeight = FontWeight.ExtraBold, fontSize = 15.5.sp)
+                            Text(item.title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                             Text(
                                 text = "${item.guru} • ${item.dateLabel}",
                                 fontSize = 11.5.sp,
@@ -976,7 +1035,7 @@ fun MateriScreen(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(Icons.Rounded.AttachFile, contentDescription = null, tint = RoyalBlue, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Rounded.AttachFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                             Text(
                                 text = "${item.fileName.ifBlank { "Ringkasan Materi" }} • ${item.dl}x",
                                 fontSize = 12.sp,
@@ -999,6 +1058,7 @@ fun MateriScreen(
                                     )
                                 }
                             },
+                            shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
                                 .minimumInteractiveComponentSize()
                                 .testTag("materi_download_${item.id}")
@@ -1088,7 +1148,7 @@ private fun UploadMateriDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Upload Materi Baru", fontWeight = FontWeight.ExtraBold) },
+        title = { Text("Upload Materi Baru", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
