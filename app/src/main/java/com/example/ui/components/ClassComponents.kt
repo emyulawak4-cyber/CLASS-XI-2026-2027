@@ -32,15 +32,32 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -49,12 +66,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.ui.theme.LocalIsDarkTheme
 import com.example.ui.theme.LocalLiquidGlass
 import com.example.ui.theme.RoyalBlue
@@ -231,6 +255,296 @@ fun V9SegmentedControl(
             }
         }
     }
+}
+
+@Composable
+fun V9PillChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    leadingIcon: ImageVector? = null,
+    selectedColor: Color = RoyalBlue,
+    selectedContentColor: Color = Color.White,
+    unselectedColor: Color = MaterialTheme.colorScheme.surface,
+    unselectedContentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    unselectedBorderColor: Color = MaterialTheme.colorScheme.outline
+) {
+    val bg = if (selected) selectedColor else unselectedColor
+    val fg = if (selected) selectedContentColor else unselectedContentColor
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = bg,
+        border = if (selected) null else BorderStroke(1.dp, unselectedBorderColor),
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            if (leadingIcon != null) {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    tint = fg,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+            Text(
+                text = text,
+                fontSize = 12.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+                color = fg,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+fun V9Field(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    leadingIcon: ImageVector? = null,
+    singleLine: Boolean = true,
+    minLines: Int = 1,
+    maxLines: Int = if (singleLine) 1 else 4,
+    enabled: Boolean = true,
+    isError: Boolean = false,
+    roundedPill: Boolean = false,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    textAlign: TextAlign = TextAlign.Start
+) {
+    val isDark = LocalIsDarkTheme.current
+    val isGlass = LocalLiquidGlass.current
+    val bg = when {
+        isGlass && isDark -> Color.White.copy(alpha = 0.08f)
+        isGlass -> Color.White.copy(alpha = 0.56f)
+        isDark -> Color(0xFF182238)
+        else -> Color(0xFFF8FAFC)
+    }
+    val border = when {
+        isError -> Color(0xFFEF4444)
+        isGlass -> Color.White.copy(alpha = if (isDark) 0.18f else 0.72f)
+        isDark -> Color(0xFF243049)
+        else -> Color(0xFFE2E8F0)
+    }
+    val shape = RoundedCornerShape(if (roundedPill) 50.dp else 11.dp)
+    Surface(
+        shape = shape,
+        color = bg,
+        border = BorderStroke(1.dp, border),
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = if (roundedPill) 14.dp else 12.dp, vertical = 10.dp),
+            verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (leadingIcon != null) {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(16.dp)
+                        .padding(top = if (singleLine) 0.dp else 2.dp)
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = if (minLines > 1) (minLines * 20).dp else 20.dp),
+                contentAlignment = if (textAlign == TextAlign.Center && singleLine) Alignment.Center else Alignment.TopStart
+            ) {
+                if (value.isEmpty()) {
+                    Text(
+                        text = placeholder,
+                        fontSize = 12.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+                        maxLines = if (singleLine) 1 else 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = textAlign,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    enabled = enabled,
+                    singleLine = singleLine,
+                    minLines = minLines,
+                    maxLines = maxLines,
+                    keyboardOptions = keyboardOptions,
+                    visualTransformation = visualTransformation,
+                    textStyle = TextStyle(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = textAlign
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun V9DropdownButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    roundedPill: Boolean = true,
+    fontWeight: FontWeight = FontWeight.Bold
+) {
+    val isDark = LocalIsDarkTheme.current
+    val isGlass = LocalLiquidGlass.current
+    val bg = when {
+        isGlass && isDark -> Color.White.copy(alpha = 0.08f)
+        isGlass -> Color.White.copy(alpha = 0.56f)
+        isDark -> Color(0xFF182238)
+        else -> Color(0xFFF8FAFC)
+    }
+    val border = when {
+        isGlass -> Color.White.copy(alpha = if (isDark) 0.18f else 0.72f)
+        isDark -> Color(0xFF243049)
+        else -> Color(0xFFE2E8F0)
+    }
+    val shape = RoundedCornerShape(if (roundedPill) 50.dp else 11.dp)
+    Surface(
+        shape = shape,
+        color = bg,
+        border = BorderStroke(1.dp, border),
+        modifier = modifier
+            .clip(shape)
+            .clickable(onClick = onClick)
+            .minimumInteractiveComponentSize()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 13.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = text,
+                fontSize = 12.sp,
+                fontWeight = fontWeight,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = Icons.Rounded.ArrowDropDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun V9DialogCard(
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    maxWidth: Dp = 440.dp,
+    scrollable: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val isGlass = LocalLiquidGlass.current
+    val isDark = LocalIsDarkTheme.current
+    val bg = when {
+        isGlass && isDark -> Color(0xEE131C2E)
+        isGlass -> Color(0xF5FFFFFF)
+        else -> MaterialTheme.colorScheme.surface
+    }
+    val border = when {
+        isGlass -> Color.White.copy(alpha = if (isDark) 0.22f else 0.85f)
+        else -> MaterialTheme.colorScheme.outline
+    }
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .imePadding()
+                .padding(horizontal = 16.dp, vertical = 20.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                shape = RoundedCornerShape(22.dp),
+                color = bg,
+                border = BorderStroke(1.dp, border),
+                modifier = modifier
+                    .fillMaxWidth()
+                    .widthIn(max = maxWidth)
+            ) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    val colMod = Modifier
+                        .fillMaxWidth()
+                        .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                        .padding(20.dp)
+                    Column(
+                        modifier = colMod,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        content = content
+                    )
+                    IconButton(
+                        onClick = onDismissRequest,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .minimumInteractiveComponentSize()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = "Tutup modal",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun V9FooterText(modifier: Modifier = Modifier) {
+    Text(
+        text = "CLASS XI — SMA Puspita Kota Tangerang • Yayasan Pendidikan Puspitasari",
+        fontSize = 11.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 6.dp, bottom = 14.dp)
+    )
 }
 
 @Composable

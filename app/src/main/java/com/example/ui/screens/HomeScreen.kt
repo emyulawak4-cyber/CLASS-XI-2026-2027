@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -58,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import com.example.model.AttendanceStatus
 import com.example.model.ClassConstants
 import com.example.ui.components.ClassCard
+import com.example.ui.components.V9FooterText
 import com.example.ui.components.formatRupiah
 import com.example.ui.theme.AmberSakit
 import com.example.ui.theme.DividerDark
@@ -514,116 +516,138 @@ fun HomeScreen(
             }
         }
 
-        // 4. Today's Highlight: Jadwal Pelajaran Hari Ini
+        // 4 & 5. Today's Highlight: Jadwal Pelajaran Hari Ini & Petugas Piket Hari Ini (2-col on >= 640dp)
         item {
-            ClassCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Jadwal Pelajaran Hari Ini (${todayDay.label})",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Lihat Semua",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onNavigate("jadwal") }
-                            .padding(horizontal = 6.dp, vertical = 4.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    todaySubjects.forEach { sub ->
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant,
+            val todayScheduleCard: @Composable () -> Unit = {
+                ClassCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Jadwal Pelajaran Hari Ini (${todayDay.label})",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "Lihat Semua",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(50))
                                 .clickable { onNavigate("jadwal") }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        todaySubjects.forEach { sub ->
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { onNavigate("jadwal") }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${sub.no}. ${sub.name}",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        text = sub.time,
+                                        style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum"),
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            val todayPicketCard: @Composable () -> Unit = {
+                ClassCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Petugas Piket Hari Ini",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = if (isDark) Color(0x2210B981) else Color(0xFFECFDF5)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Text(
+                                text = "${todayPicket.size} Siswa",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isDark) Color(0xFF6EE7B7) else EmeraldDark,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        todayPicket.forEach { st ->
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .clickable { onOpenStudentQr(st.id) }
                             ) {
                                 Text(
-                                    text = "${sub.no}. ${sub.name}",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(
-                                    text = sub.time,
-                                    style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum"),
+                                    text = "${st.noAbsen}. ${st.name}",
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
                                 )
                             }
                         }
                     }
                 }
             }
-        }
 
-        // 5. Today's Highlight: Petugas Piket Hari Ini
-        item {
-            ClassCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Petugas Piket Hari Ini",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Surface(
-                        shape = CircleShape,
-                        color = if (isDark) Color(0x2210B981) else Color(0xFFECFDF5)
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                if (maxWidth >= 640.dp) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.Top
                     ) {
-                        Text(
-                            text = "${todayPicket.size} Siswa",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isDark) Color(0xFF6EE7B7) else EmeraldDark,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
+                        Box(modifier = Modifier.weight(1f)) { todayScheduleCard() }
+                        Box(modifier = Modifier.weight(1f)) { todayPicketCard() }
                     }
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    todayPicket.forEach { st ->
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable { onOpenStudentQr(st.id) }
-                        ) {
-                            Text(
-                                text = "${st.noAbsen}. ${st.name}",
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
-                            )
-                        }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        todayScheduleCard()
+                        todayPicketCard()
                     }
                 }
             }
@@ -631,15 +655,7 @@ fun HomeScreen(
 
         // Footer matching v9 lines 1548-1550
         item {
-            Text(
-                text = "CLASS XI — SMA Puspita Kota Tangerang • Yayasan Pendidikan Puspitasari",
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp, bottom = 12.dp)
-            )
+            V9FooterText()
         }
     }
 }

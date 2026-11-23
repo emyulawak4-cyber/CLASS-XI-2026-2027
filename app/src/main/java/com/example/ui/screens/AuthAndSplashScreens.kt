@@ -97,9 +97,9 @@ fun AuthScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Surface(
-                shape = RoundedCornerShape(24.dp),
+                shape = CircleShape,
                 color = Color.White,
-                shadowElevation = 6.dp,
+                shadowElevation = 8.dp,
                 modifier = Modifier.size(96.dp)
             ) {
                 Image(
@@ -108,7 +108,7 @@ fun AuthScreen(
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(10.dp)
+                        .padding(12.dp)
                 )
             }
 
@@ -237,7 +237,7 @@ fun AuthScreen(
                     containerColor = Color.White,
                     contentColor = RoyalBlue
                 ),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(50),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
@@ -375,7 +375,7 @@ fun SplashWelcomeOverlay(
                 ) {
                     // Splash emblem with glowing orb behind
                     Box(
-                        modifier = Modifier.size(190.dp),
+                        modifier = Modifier.size(208.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         if (isGlass) {
@@ -496,7 +496,7 @@ fun SplashWelcomeOverlay(
                             contentColor = btnContent
                         ),
                         border = if (isGlass) BorderStroke(1.dp, Color.White.copy(alpha = 0.42f)) else null,
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(50),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)

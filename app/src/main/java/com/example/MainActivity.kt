@@ -40,6 +40,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
+import androidx.compose.material.icons.rounded.MailOutline
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Search
@@ -324,6 +325,8 @@ private fun ClassXiPortalRoot(
     var showSplashOverlay by remember { mutableStateOf(true) }
     var showAdminPinDialog by remember { mutableStateOf(false) }
     var showGuruPinDialog by remember { mutableStateOf(false) }
+    var openMateriUploadOnGuruVerify by remember { mutableStateOf(false) }
+    var openMateriUploadTrigger by remember { mutableStateOf(0) }
     var activeQrStudentId by remember { mutableStateOf<Int?>(null) }
     var showScannerDialog by remember { mutableStateOf(false) }
     var pendingPresensiFilter by remember { mutableStateOf<AttendanceStatus?>(null) }
@@ -445,11 +448,17 @@ private fun ClassXiPortalRoot(
                                         if (portalData.isAdminMode) viewModel.exitAdminMode() else showAdminPinDialog = true
                                     }
                                 )
-                                V9StatusStrip(
-                                    pendingLeaveCount = portalData.pendingLeaveCount,
-                                    isOnlineSynced = portalData.isOnlineSynced,
-                                    onClickPendingLeave = { navigateTo(SuratIzinRoute) }
-                                )
+                                Box(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    V9StatusStrip(
+                                        pendingLeaveCount = portalData.pendingLeaveCount,
+                                        isOnlineSynced = portalData.isOnlineSynced,
+                                        onClickPendingLeave = { navigateTo(SuratIzinRoute) },
+                                        modifier = Modifier.widthIn(max = 960.dp)
+                                    )
+                                }
                             }
                         },
                         bottomBar = {
@@ -465,7 +474,8 @@ private fun ClassXiPortalRoot(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(innerPadding)
+                                .padding(innerPadding),
+                            contentAlignment = Alignment.TopCenter
                         ) {
                             when (val state = uiState) {
                                 is UiState.Loading -> {
@@ -502,7 +512,9 @@ private fun ClassXiPortalRoot(
                                     NavHost(
                                         navController = navController,
                                         startDestination = BerandaRoute,
-                                        modifier = Modifier.fillMaxSize()
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .widthIn(max = 960.dp)
                                     ) {
                                         composable<BerandaRoute> {
                                             HomeScreen(
@@ -520,6 +532,8 @@ private fun ClassXiPortalRoot(
                                             PresensiScreen(
                                                 data = data,
                                                 initialFilter = pendingPresensiFilter,
+                                                onConsumeInitialFilter = { pendingPresensiFilter = null },
+                                                onOpenIzin = { navigateTo(SuratIzinRoute) },
                                                 onSetDate = viewModel::setSelectedDate,
                                                 onSetToday = viewModel::setTodayDate,
                                                 onUpdateStatus = viewModel::updateStudentAttendance,
@@ -594,7 +608,11 @@ private fun ClassXiPortalRoot(
                                             MateriScreen(
                                                 data = data,
                                                 currentUid = currentUser.uid,
-                                                onRequestGuruLogin = { showGuruPinDialog = true },
+                                                openUploadTrigger = openMateriUploadTrigger,
+                                                onRequestGuruLogin = {
+                                                    openMateriUploadOnGuruVerify = true
+                                                    showGuruPinDialog = true
+                                                },
                                                 onExitGuruMode = viewModel::exitGuruMode,
                                                 onAddMateri = viewModel::addMateri,
                                                 onIncrementDownload = viewModel::incrementMateriDownload,
@@ -654,8 +672,18 @@ private fun ClassXiPortalRoot(
 
             if (showGuruPinDialog) {
                 GuruPinDialog(
-                    onDismiss = { showGuruPinDialog = false },
-                    onVerify = viewModel::verifyGuruPin
+                    onDismiss = {
+                        openMateriUploadOnGuruVerify = false
+                        showGuruPinDialog = false
+                    },
+                    onVerify = { pin ->
+                        val ok = viewModel.verifyGuruPin(pin)
+                        if (ok && openMateriUploadOnGuruVerify) {
+                            openMateriUploadOnGuruVerify = false
+                            openMateriUploadTrigger++
+                        }
+                        ok
+                    }
                 )
             }
 
@@ -697,10 +725,12 @@ private fun ClassXiTopHeader(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(headerBrush)
+                .background(headerBrush),
+            contentAlignment = Alignment.Center
         ) {
             Column(
                 modifier = Modifier
+                    .widthIn(max = 960.dp)
                     .fillMaxWidth()
                     .statusBarsPadding()
                     .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 14.dp),
@@ -804,16 +834,16 @@ private fun ClassXiTopHeader(
                         }
                         val adminFg = if (data.isAdminMode) Color.White else RoyalBlue
                         Surface(
-                            shape = RoundedCornerShape(11.dp),
+                            shape = RoundedCornerShape(50),
                             color = adminBg,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(11.dp))
+                                .clip(RoundedCornerShape(50))
                                 .clickable(onClick = onToggleAdmin)
                                 .minimumInteractiveComponentSize()
                                 .testTag("topbar_admin_toggle")
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
+                                modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
@@ -826,7 +856,7 @@ private fun ClassXiTopHeader(
                                 Text(
                                     text = if (data.isAdminMode) data.activePengurusRole else "Mode Pengurus",
                                     color = adminFg,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.ExtraBold,
                                     fontSize = 11.5.sp,
                                     maxLines = 1
                                 )
@@ -858,7 +888,7 @@ private fun ClassXiTopHeader(
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(50),
                     color = searchBg,
                     border = BorderStroke(1.dp, searchBorder),
                     modifier = Modifier.fillMaxWidth()
@@ -866,7 +896,7 @@ private fun ClassXiTopHeader(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 9.dp),
+                            .padding(horizontal = 14.dp, vertical = 9.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -879,9 +909,9 @@ private fun ClassXiTopHeader(
                         Box(modifier = Modifier.weight(1f)) {
                             if (data.globalSearch.isEmpty()) {
                                 Text(
-                                    text = "Cari siswa, pengumuman, atau materi...",
+                                    text = "Cari siswa, kas, dokumentasi, jadwal, atau materi...",
                                     color = searchPlaceholderColor,
-                                    fontSize = 12.5.sp,
+                                    fontSize = 12.sp,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -930,13 +960,14 @@ private fun ClassXiTopHeader(
 private fun V9StatusStrip(
     pendingLeaveCount: Int,
     isOnlineSynced: Boolean,
-    onClickPendingLeave: () -> Unit
+    onClickPendingLeave: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val isDark = LocalIsDarkTheme.current
     val isGlass = LocalLiquidGlass.current
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -949,35 +980,36 @@ private fun V9StatusStrip(
                 else -> Color(0xFFFFFBEB)
             }
             val pendingBorder = if (isDark) Color(0x55F59E0B) else Color(0xFFFDE68A)
-            val pendingText = if (isDark) Color(0xFFFCD34D) else Color(0xFFB45309)
+            val pendingText = if (isDark) Color(0xFFFCD34D) else Color(0xFF92400E)
+            val pendingIconTint = if (isDark) Color(0xFFFCD34D) else Color(0xFFD97706)
 
             Surface(
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(50),
                 color = pendingBg,
                 border = BorderStroke(1.dp, pendingBorder),
                 modifier = Modifier
                     .weight(1f, fill = false)
                     .padding(end = 8.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(50))
                     .clickable(onClick = onClickPendingLeave)
                     .testTag("status_pending_leave_pill")
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(7.dp)
-                            .clip(CircleShape)
-                            .background(AmberSakit)
+                    Icon(
+                        imageVector = Icons.Rounded.MailOutline,
+                        contentDescription = null,
+                        tint = pendingIconTint,
+                        modifier = Modifier.size(14.dp)
                     )
                     Text(
                         text = "$pendingLeaveCount Surat Izin/Sakit menunggu verifikasi",
                         color = pendingText,
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -1025,7 +1057,7 @@ private fun V9StatusStrip(
                         .background(dotColor)
                 )
                 Text(
-                    text = if (isOnlineSynced) "Online" else "Menyinkronkan...",
+                    text = if (isOnlineSynced) "Online" else "Tidak ada internet",
                     color = cloudFg,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,

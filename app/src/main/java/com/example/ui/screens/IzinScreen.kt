@@ -3,9 +3,9 @@ package com.example.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -19,30 +19,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
-import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.LocalHospital
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.NoteAlt
 import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -67,6 +65,10 @@ import com.example.model.LeaveRequest
 import com.example.ui.components.ClassCard
 import com.example.ui.components.PortalFeedback
 import com.example.ui.components.StatusBadge
+import com.example.ui.components.V9DropdownButton
+import com.example.ui.components.V9Field
+import com.example.ui.components.V9FooterText
+import com.example.ui.components.V9PillChip
 import com.example.ui.components.V9SegmentedControl
 import com.example.ui.theme.AmberSakit
 import com.example.ui.theme.EmeraldDark
@@ -113,6 +115,7 @@ fun IzinScreen(
     var formError by remember { mutableStateOf<String?>(null) }
 
     var statusFilter by remember { mutableStateOf("Semua") }
+    var historySearch by remember { mutableStateOf("") }
 
     val pendingCount = data.leaveRequests.count { it.status == "Menunggu" }
     val approvedCount = data.leaveRequests.count { it.status == "Disetujui" }
@@ -130,133 +133,107 @@ fun IzinScreen(
     }
 
     val globalQ = data.globalSearch.trim().lowercase()
-    val filteredLeaves = remember(data.leaveRequests, statusFilter, globalQ) {
+    val histQ = historySearch.trim().lowercase()
+    val filteredLeaves = remember(data.leaveRequests, statusFilter, globalQ, histQ) {
         data.leaveRequests.filter { item ->
             val matchStatus = statusFilter == "Semua" || item.status == statusFilter
-            val matchSearch = globalQ.isBlank() ||
+            val matchGlobal = globalQ.isBlank() ||
                 item.studentName.lowercase().contains(globalQ) ||
                 item.reason.lowercase().contains(globalQ) ||
                 item.noAbsen.contains(globalQ)
-            matchStatus && matchSearch
+            val matchLocal = histQ.isBlank() ||
+                item.studentName.lowercase().contains(histQ) ||
+                item.reason.lowercase().contains(histQ) ||
+                item.noAbsen.contains(histQ)
+            matchStatus && matchGlobal && matchLocal
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        // Summary strip
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                LeaveStatBox("Menunggu", pendingCount, AmberSakit, Modifier.weight(1f))
-                LeaveStatBox("Disetujui", approvedCount, EmeraldKas, Modifier.weight(1f))
-                LeaveStatBox("Ditolak", rejectedCount, RoseAlpa, Modifier.weight(1f))
-            }
-        }
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val screenWidth = maxWidth
+        val isSplit = screenWidth >= 840.dp
+        val isTopRow = screenWidth >= 680.dp
 
-        // Step 1 Google Forms with v9 numbered .step-no badge
-        item {
-            ClassCard {
+        val formCard: @Composable () -> Unit = {
+            ClassCard(contentPadding = PaddingValues(18.dp)) {
+                // Step 1 matching HTML lines 1207-1217
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    StepNoBadge("1", isDark)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Unggah bukti di Google Forms",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Foto surat dokter atau surat orang tua.",
+                            fontSize = 11.5.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = { PortalFeedback.openUrl(context, GOOGLE_FORM_IZIN_URL) },
+                                shape = RoundedCornerShape(11.dp),
+                                modifier = Modifier
+                                    .minimumInteractiveComponentSize()
+                                    .testTag("izin_open_gform")
+                            ) {
+                                Icon(Icons.Rounded.OpenInNew, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Buka Forms", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    PortalFeedback.copyToClipboard(context, "Google Forms Izin CLASS XI", GOOGLE_FORM_IZIN_URL)
+                                    onShowMessage("Link Google Forms berhasil disalin!")
+                                },
+                                shape = RoundedCornerShape(11.dp),
+                                modifier = Modifier
+                                    .minimumInteractiveComponentSize()
+                                    .testTag("izin_copy_gform")
+                            ) {
+                                Icon(Icons.Rounded.ContentCopy, contentDescription = "Salin link Google Forms", modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Salin link", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Step 2 matching HTML lines 1222-1262
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(RoundedCornerShape(9.dp))
-                            .background(if (isDark) PrimaryTintDark else PrimaryTintLight),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "1",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                    StepNoBadge("2", isDark)
                     Text(
-                        text = "Isi Google Forms Resmi Wali Kelas",
+                        text = "Isi pengajuan",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-                Spacer(modifier = Modifier.height(6.dp))
+
+                Spacer(modifier = Modifier.height(14.dp))
                 Text(
-                    text = "Sebelum atau setelah mengirim pengajuan di aplikasi, pastikan mengisi formulir resmi Google Forms agar tercatat wali kelas.",
+                    text = "Jenis",
                     fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = { PortalFeedback.openUrl(context, GOOGLE_FORM_IZIN_URL) },
-                        shape = RoundedCornerShape(11.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .minimumInteractiveComponentSize()
-                            .testTag("izin_open_gform")
-                    ) {
-                        Icon(Icons.Rounded.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Buka Forms", fontWeight = FontWeight.Bold)
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            PortalFeedback.copyToClipboard(context, "Google Forms Izin CLASS XI", GOOGLE_FORM_IZIN_URL)
-                            onShowMessage("Link Google Forms disalin.")
-                        },
-                        shape = RoundedCornerShape(11.dp),
-                        modifier = Modifier
-                            .minimumInteractiveComponentSize()
-                            .testTag("izin_copy_gform")
-                    ) {
-                        Icon(Icons.Rounded.ContentCopy, contentDescription = "Salin link Google Forms", modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Salin")
-                    }
-                }
-            }
-        }
-
-        // Step 2 Digital Leave Form with v9 numbered .step-no badge & .type-btn selector cards
-        item {
-            ClassCard {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(RoundedCornerShape(9.dp))
-                            .background(if (isDark) PrimaryTintDark else PrimaryTintLight),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "2",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Text(
-                        text = "Ajukan Surat Sakit / Izin Digital",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -267,21 +244,18 @@ fun IzinScreen(
                     ).forEach { (typeOption, accent, typeIcon) ->
                         val active = leaveType == typeOption
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (active) accent.copy(alpha = if (isDark) 0.20f else 0.10f) else MaterialTheme.colorScheme.surface,
-                            border = BorderStroke(
-                                width = 1.5.dp,
-                                color = if (active) accent else MaterialTheme.colorScheme.outline
-                            ),
+                            shape = RoundedCornerShape(11.dp),
+                            color = if (active) accent.copy(alpha = if (isDark) 0.22f else 0.10f) else MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.5.dp, if (active) accent else MaterialTheme.colorScheme.outline),
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(11.dp))
                                 .clickable { leaveType = typeOption }
                                 .minimumInteractiveComponentSize()
                                 .testTag("izin_type_${typeOption.lowercase()}")
                         ) {
                             Row(
-                                modifier = Modifier.padding(vertical = 11.dp, horizontal = 12.dp),
+                                modifier = Modifier.padding(vertical = 10.dp, horizontal = 10.dp),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -289,7 +263,7 @@ fun IzinScreen(
                                     imageVector = typeIcon,
                                     contentDescription = typeOption,
                                     tint = if (active) accent else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(17.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
@@ -303,101 +277,127 @@ fun IzinScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Nama siswa",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                V9Field(
+                    value = studentQuery,
+                    onValueChange = {
+                        studentQuery = it
+                        matchingStudents.firstOrNull()?.let { firstMatch ->
+                            selectedStudentId = firstMatch.id
+                        }
+                    },
+                    placeholder = "Ketik nama atau nomor absen",
+                    leadingIcon = Icons.Rounded.Search
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
+                    V9DropdownButton(
+                        text = "${selectedStudent.noAbsen}. ${selectedStudent.name} (Piket ${selectedStudent.piket})",
                         onClick = { showStudentDropdown = true },
-                        shape = RoundedCornerShape(11.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .minimumInteractiveComponentSize()
-                            .testTag("izin_student_selector")
-                    ) {
-                        Text(
-                            text = "${selectedStudent.noAbsen}. ${selectedStudent.name} (Piket ${selectedStudent.piket})",
-                            modifier = Modifier.weight(1f),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Icon(Icons.Rounded.ArrowDropDown, contentDescription = "Pilih siswa")
-                    }
+                        roundedPill = false,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.testTag("izin_student_selector")
+                    )
                     DropdownMenu(
                         expanded = showStudentDropdown,
                         onDismissRequest = { showStudentDropdown = false },
-                        modifier = Modifier.fillMaxWidth(0.85f)
+                        modifier = Modifier.fillMaxWidth(0.84f)
                     ) {
-                        OutlinedTextField(
-                            value = studentQuery,
-                            onValueChange = { studentQuery = it },
-                            placeholder = { Text("Cari nama / absen...") },
-                            singleLine = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                        matchingStudents.take(15).forEach { st ->
+                        matchingStudents.take(20).forEach { st ->
                             DropdownMenuItem(
                                 text = { Text("${st.noAbsen}. ${st.name}") },
                                 onClick = {
                                     selectedStudentId = st.id
                                     showStudentDropdown = false
-                                    studentQuery = ""
                                 }
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-                OutlinedTextField(
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Tanggal",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                V9Field(
                     value = dateInput,
                     onValueChange = { dateInput = it.take(10) },
-                    label = { Text("Tanggal Izin (YYYY-MM-DD)") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(11.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("izin_date_input")
+                    placeholder = "YYYY-MM-DD",
+                    modifier = Modifier.testTag("izin_date_input")
                 )
-
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf("Kemarin" to -1, "Hari Ini" to 0, "Besok" to 1).forEach { (lbl, offset) ->
-                        SuggestionChip(
-                            onClick = { dateInput = offsetDate(offset) },
-                            label = { Text(lbl, fontSize = 11.5.sp) }
+                        val target = offsetDate(offset)
+                        V9PillChip(
+                            text = lbl,
+                            selected = dateInput == target,
+                            onClick = { dateInput = target }
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Alasan",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${reason.length}/200",
+                        fontFamily = JetBrainsMono,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                V9Field(
                     value = reason,
                     onValueChange = { reason = it.take(200) },
-                    label = { Text("Alasan / Keterangan") },
-                    supportingText = { Text("${reason.length}/200 karakter") },
-                    minLines = 2,
+                    placeholder = "Tulis alasan singkat atau pilih di bawah",
+                    singleLine = false,
+                    minLines = 3,
                     maxLines = 4,
-                    shape = RoundedCornerShape(11.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("izin_reason_input")
+                    modifier = Modifier.testTag("izin_reason_input")
                 )
-
+                Spacer(modifier = Modifier.height(8.dp))
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     ClassConstants.LEAVE_REASONS[leaveType].orEmpty().forEach { template ->
-                        SuggestionChip(
-                            onClick = { reason = template },
-                            label = { Text(template, fontSize = 11.sp) }
+                        V9PillChip(
+                            text = template,
+                            selected = reason == template,
+                            onClick = { reason = template }
                         )
                     }
                 }
 
+                Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { gformConfirmed = !gformConfirmed }
                 ) {
                     Checkbox(
                         checked = gformConfirmed,
@@ -405,17 +405,19 @@ fun IzinScreen(
                         modifier = Modifier.testTag("izin_gform_checkbox")
                     )
                     Text(
-                        text = "Saya sudah mengisi Google Forms resmi",
-                        fontSize = 12.5.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        text = "Bukti sudah saya unggah di Google Forms (opsional, bisa menyusul)",
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 if (formError != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(formError!!, color = RoseAlpa, fontSize = 12.sp)
-                    Spacer(modifier = Modifier.height(6.dp))
                 }
 
+                Spacer(modifier = Modifier.height(10.dp))
                 Button(
                     onClick = {
                         when {
@@ -442,91 +444,272 @@ fun IzinScreen(
                         .minimumInteractiveComponentSize()
                         .testTag("izin_submit_button")
                 ) {
-                    Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Kirim Pengajuan $leaveType", fontWeight = FontWeight.Bold)
+                    Text("Kirim pengajuan", fontWeight = FontWeight.SemiBold)
                 }
             }
         }
 
-        // Riwayat & Verifikasi Segmented Filter (.seg)
-        item {
-            V9SegmentedControl(
-                options = listOf(
-                    "Semua" to "Semua",
-                    "Menunggu" to "Menunggu",
-                    "Disetujui" to "Disetujui",
-                    "Ditolak" to "Ditolak"
-                ),
-                selectedKey = statusFilter,
-                onSelect = { statusFilter = it },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+        val historyCard: @Composable () -> Unit = {
+            ClassCard(contentPadding = PaddingValues(18.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Riwayat pengajuan",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.5.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            StatusBadge(
+                                text = "$pendingCount Menunggu",
+                                containerColor = if (isDark) Color(0x28F59E0B) else Color(0xFFFFFBEB),
+                                contentColor = if (isDark) Color(0xFFFCD34D) else Color(0xFFB45309),
+                                cornerRadius = 8.dp
+                            )
+                        }
+                    }
 
-        if (filteredLeaves.isEmpty()) {
-            item {
-                ClassCard {
-                    Text(
-                        text = "Belum ada riwayat surat izin pada filter ini.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp
+                    V9SegmentedControl(
+                        options = listOf(
+                            "Semua" to "Semua",
+                            "Menunggu" to "Menunggu",
+                            "Disetujui" to "Disetujui",
+                            "Ditolak" to "Ditolak"
+                        ),
+                        selectedKey = statusFilter,
+                        onSelect = { statusFilter = it },
+                        modifier = Modifier.fillMaxWidth()
                     )
+
+                    V9Field(
+                        value = historySearch,
+                        onValueChange = { historySearch = it },
+                        placeholder = "Cari nama siswa di riwayat",
+                        leadingIcon = Icons.Rounded.Search
+                    )
+
+                    // #leaveAdminModeBar matching HTML line 1278
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Lock,
+                                    contentDescription = null,
+                                    tint = if (data.isAdminMode) EmeraldKas else RoyalBlue,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = if (data.isAdminMode) {
+                                        "Mode ${data.activePengurusRole}: Anda dapat menyetujui atau menolak surat."
+                                    } else {
+                                        "Masuk Mode Pengurus untuk memverifikasi surat & otomatis memperbarui presensi."
+                                    },
+                                    fontSize = 11.5.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (!data.isAdminMode) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = RoyalBlue,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable(onClick = onRequestAdminLogin)
+                                ) {
+                                    Text(
+                                        text = "Login",
+                                        color = Color.White,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (filteredLeaves.isEmpty()) {
+                        Text(
+                            text = "Belum ada riwayat surat izin pada filter ini.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.5.sp,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            filteredLeaves.forEach { leave ->
+                                LeaveHistoryItem(
+                                    leave = leave,
+                                    isAdminMode = data.isAdminMode,
+                                    isDark = isDark,
+                                    canDelete = leave.userId == currentUid || data.isAdminMode,
+                                    onApprove = { onVerifyLeave(leave, true) },
+                                    onReject = { onVerifyLeave(leave, false) },
+                                    onRequestAdminLogin = onRequestAdminLogin,
+                                    onDelete = { onDeleteLeave(leave.id) }
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        } else {
-            items(filteredLeaves, key = { it.id }) { leave ->
-                LeaveHistoryCard(
-                    leave = leave,
-                    isAdminMode = data.isAdminMode,
-                    canDelete = leave.userId == currentUid,
-                    onApprove = { onVerifyLeave(leave, true) },
-                    onReject = { onVerifyLeave(leave, false) },
-                    onRequestAdminLogin = onRequestAdminLogin,
-                    onDelete = { onDeleteLeave(leave.id) }
-                )
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Top Title + 3 Clickable Stat Cards matching HTML lines 1191-1201
+            item {
+                val statsRow: @Composable (Modifier) -> Unit = { mod ->
+                    Row(
+                        modifier = mod,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        LeaveStatTile("Menunggu", pendingCount, AmberSakit, Modifier.weight(1f)) {
+                            statusFilter = "Menunggu"
+                        }
+                        LeaveStatTile("Disetujui", approvedCount, EmeraldKas, Modifier.weight(1f)) {
+                            statusFilter = "Disetujui"
+                        }
+                        LeaveStatTile("Ditolak", rejectedCount, RoseAlpa, Modifier.weight(1f)) {
+                            statusFilter = "Ditolak"
+                        }
+                    }
+                }
+
+                if (isTopRow) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                            Text("Surat Izin & Sakit", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text(
+                                "Ajukan keterangan tidak hadir. Pengurus akan memverifikasi dan presensi terisi otomatis.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        statsRow(Modifier.width(340.dp))
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column {
+                            Text("Surat Izin & Sakit", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text(
+                                "Ajukan keterangan tidak hadir. Pengurus akan memverifikasi dan presensi terisi otomatis.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        statsRow(Modifier.fillMaxWidth())
+                    }
+                }
             }
+
+            // 5:7 split on expanded screens, stacked on phones
+            item {
+                if (isSplit) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Box(modifier = Modifier.weight(5f)) { formCard() }
+                        Box(modifier = Modifier.weight(7f)) { historyCard() }
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        formCard()
+                        historyCard()
+                    }
+                }
+            }
+
+            item { V9FooterText() }
         }
     }
 }
 
 @Composable
-private fun LeaveStatBox(
+private fun StepNoBadge(num: String, isDark: Boolean) {
+    Box(
+        modifier = Modifier
+            .size(28.dp)
+            .clip(RoundedCornerShape(9.dp))
+            .background(if (isDark) PrimaryTintDark else PrimaryTintLight),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = num,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun LeaveStatTile(
     label: String,
     count: Int,
     accent: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        color = accent.copy(alpha = 0.12f)
+    ClassCard(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = count.toString(),
-                fontFamily = JetBrainsMono,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 20.sp,
-                color = accent
-            )
-            Text(
-                text = label,
-                fontSize = 11.5.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        Text(
+            text = count.toString(),
+            fontFamily = JetBrainsMono,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            color = accent
+        )
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 @Composable
-private fun LeaveHistoryCard(
+private fun LeaveHistoryItem(
     leave: LeaveRequest,
     isAdminMode: Boolean,
+    isDark: Boolean,
     canDelete: Boolean,
     onApprove: () -> Unit,
     onReject: () -> Unit,
@@ -538,113 +721,118 @@ private fun LeaveHistoryCard(
         "Ditolak" -> RoseAlpa
         else -> AmberSakit
     }
-    ClassCard {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    StatusBadge(
-                        text = leave.type,
-                        containerColor = if (leave.type == "Sakit") Color(0xFFFEF3C7) else Color(0xFFE0F2FE),
-                        contentColor = if (leave.type == "Sakit") Color(0xFFB45309) else SkyBlue
-                    )
-                    StatusBadge(
-                        text = leave.status,
-                        containerColor = statusColor.copy(alpha = 0.14f),
-                        contentColor = statusColor
-                    )
-                    if (leave.gformConfirmed) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         StatusBadge(
-                            text = "Forms ✓",
-                            containerColor = Color(0xFFECFDF5),
-                            contentColor = EmeraldDark
+                            text = leave.type,
+                            containerColor = if (leave.type == "Sakit") {
+                                if (isDark) Color(0x28F59E0B) else Color(0xFFFEF3C7)
+                            } else {
+                                if (isDark) Color(0x280EA5E9) else Color(0xFFE0F2FE)
+                            },
+                            contentColor = if (leave.type == "Sakit") {
+                                if (isDark) Color(0xFFFCD34D) else Color(0xFFB45309)
+                            } else {
+                                if (isDark) Color(0xFF7DD3FC) else SkyBlue
+                            }
                         )
+                        StatusBadge(
+                            text = leave.status,
+                            containerColor = statusColor.copy(alpha = 0.14f),
+                            contentColor = statusColor
+                        )
+                        if (leave.gformConfirmed) {
+                            StatusBadge(
+                                text = "Forms ✓",
+                                containerColor = if (isDark) Color(0x2810B981) else Color(0xFFECFDF5),
+                                contentColor = if (isDark) Color(0xFF6EE7B7) else EmeraldDark
+                            )
+                        }
                     }
-                }
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "${leave.noAbsen}. ${leave.studentName}",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 14.5.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "Tanggal: ${leave.date} • Piket ${leave.piket}",
-                    fontSize = 11.5.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (canDelete) {
-                IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier
-                        .minimumInteractiveComponentSize()
-                        .testTag("izin_delete_${leave.id}")
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.DeleteOutline,
-                        contentDescription = "Hapus riwayat surat",
-                        tint = RoseAlpa
+                    Text(
+                        text = "${leave.noAbsen}. ${leave.studentName}",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Tanggal: ${leave.date} • Piket ${leave.piket}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = leave.reason,
-            fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        if (leave.verifiedBy.isNotBlank()) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Diverifikasi oleh ${leave.verifiedBy}",
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        if (leave.status == "Menunggu") {
-            Spacer(modifier = Modifier.height(10.dp))
-            if (isAdminMode) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    Button(
-                        onClick = onApprove,
-                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldKas),
+                if (canDelete) {
+                    IconButton(
+                        onClick = onDelete,
                         modifier = Modifier
-                            .weight(1f)
                             .minimumInteractiveComponentSize()
-                            .testTag("izin_approve_${leave.id}")
+                            .testTag("izin_delete_${leave.id}")
                     ) {
-                        Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Setujui", fontWeight = FontWeight.Bold)
-                    }
-                    OutlinedButton(
-                        onClick = onReject,
-                        modifier = Modifier
-                            .weight(1f)
-                            .minimumInteractiveComponentSize()
-                            .testTag("izin_reject_${leave.id}")
-                    ) {
-                        Icon(Icons.Rounded.Close, contentDescription = null, tint = RoseAlpa, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Tolak", color = RoseAlpa, fontWeight = FontWeight.Bold)
+                        Icon(Icons.Rounded.DeleteOutline, contentDescription = "Hapus riwayat surat", tint = RoseAlpa)
                     }
                 }
-            } else {
-                OutlinedButton(
-                    onClick = onRequestAdminLogin,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .minimumInteractiveComponentSize()
-                        .testTag("izin_unlock_admin_${leave.id}")
-                ) {
-                    Text("Masuk Mode Pengurus untuk Verifikasi", color = RoyalBlue, fontSize = 12.sp)
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(text = leave.reason, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurface)
+            if (leave.verifiedBy.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("Diverifikasi oleh ${leave.verifiedBy}", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            if (leave.status == "Menunggu") {
+                Spacer(modifier = Modifier.height(10.dp))
+                if (isAdminMode) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = onApprove,
+                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldKas),
+                            shape = RoundedCornerShape(50),
+                            modifier = Modifier
+                                .weight(1f)
+                                .minimumInteractiveComponentSize()
+                                .testTag("izin_approve_${leave.id}")
+                        ) {
+                            Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Setujui", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(
+                            onClick = onReject,
+                            shape = RoundedCornerShape(50),
+                            modifier = Modifier
+                                .weight(1f)
+                                .minimumInteractiveComponentSize()
+                                .testTag("izin_reject_${leave.id}")
+                        ) {
+                            Icon(Icons.Rounded.Close, contentDescription = null, tint = RoseAlpa, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Tolak", color = RoseAlpa, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = onRequestAdminLogin,
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .minimumInteractiveComponentSize()
+                            .testTag("izin_unlock_admin_${leave.id}")
+                    ) {
+                        Text("Masuk Mode Pengurus untuk Verifikasi", color = RoyalBlue, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
